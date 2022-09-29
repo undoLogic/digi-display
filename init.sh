@@ -38,8 +38,8 @@ cat id_ed25519.pub
 
 cd ~/
 # checkout files from github
-mkdir offlineBox
-cd offlineBox
+mkdir sites
+cd sites
 #cd /home/liquidle/www/staging && rm -rf master && git clone git@github.com:undologic/updateCase-undologic.git --branch master --single-branch /home/liquidle/www/staging/master
 git clone git@github.com:undologic/updateCase-undologic.git --branch master --single-branch .
 
