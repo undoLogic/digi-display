@@ -1,4 +1,6 @@
 {
   "site": "domain.com",
-  "state": "RUN"
+  "state": "RUN",
+  "github": "undoLogic/updateCase-undoLogic",
+  "start_page": ""
 }
