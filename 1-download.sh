@@ -5,6 +5,7 @@ mkdir offlineBox
 cd offlineBox
 git clone https://github.com/undoLogic/offlinebox.git --branch main --single-branch .
 
+sudo chmod +x -R offlineBox
 
 
 #wget https://raw.githubusercontent.com/username/repository/branch/path/filename.md
