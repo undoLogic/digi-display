@@ -29,7 +29,7 @@ sudo apt install docker-compose
 # setup keys
 cd ~/.ssh
 ssh-keygen -t ed25519 -C "support@offlinebox.com"
-#cat id_ed25519.pub
+cat id_ed25519.pub
 echo "FUTURE: save into to server automatically"
 # put public key into github
 
