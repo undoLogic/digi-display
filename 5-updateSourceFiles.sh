@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-cd ~/offlineBox || exit
-cd sites/domain.com || exit
+cd ~/Desktop/offlineBox/sites/primary || exit
 
+# update to the newest version
 git update
-

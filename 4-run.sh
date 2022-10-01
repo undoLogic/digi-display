@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
+
 # verify ssh tunnel is active and working
 
 # start / verify docker is running
-cd ~/offlineBox/sites/primary/docker || exit
+cd ~/Desktop/offlineBox/sites/primary/docker || exit
 
 # start docker
 ./1reStartDocker.sh
