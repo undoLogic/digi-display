@@ -2,6 +2,9 @@
 # this file is offered from http://get.offlinebox.com
 # Allowing to start the installation process on the linux ubuntu device
 
+sudo apt update
+sudo apt install git
+
 # get this file to the new computer
 cd ~/ || exit
 mkdir offlineBox || exit
