@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
-cd ~/offlineBox
-cd sites/domain.com
+cd ~/offlineBox || exit
+cd sites/domain.com || exit
+
 git update
+

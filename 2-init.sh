@@ -5,7 +5,7 @@
 
 # Install Docker
 sudo apt update
-sudo apt install curl git
+sudo apt install curl git openssh-server
 
 # instructions from on lubuntu
 # https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository
@@ -17,6 +17,9 @@ sudo sh get-docker.sh
 # run in rootless mode (no sudo)
 dockerd-rootless-setuptool.sh install
 
+# allow to run as non-root
+sudo usermod -aG docker offlinebox
+
 # if errors do this
 #sudo sh -eux <<EOF
 ## Install newuidmap & newgidmap binaries
@@ -27,7 +30,7 @@ dockerd-rootless-setuptool.sh install
 sudo apt install docker-compose
 
 # setup keys
-cd ~/.ssh
+cd ~/.ssh || exit
 ssh-keygen -t ed25519 -C "support@offlinebox.com"
 cat id_ed25519.pub
 echo "FUTURE: save into to server automatically"
@@ -44,6 +47,13 @@ echo "FUTURE: save into to server automatically"
 ##Using default tag: latest
 ##latest: Pulling from library/hello-world
 
-# setup SSH tunnel
+############# SSH tunnel
+
+# first time start it up
+sudo systemctl start sshd
+# startup at reboot - not working
+sudo systemctl enable sshd
+
+
 
 # create crontab
