@@ -5,6 +5,7 @@
 sudo apt update
 sudo apt install git
 
+
 # get this file to the new computer
 mkdir ~/offlineBox || return
 cd ~/offlineBox || exit
