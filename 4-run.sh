@@ -3,9 +3,7 @@
 # verify ssh tunnel is active and working
 
 # start / verify docker is running
-cd ~/offlineBox || exit
-cd sites/domain.com || exit
-cd docker || exit
+cd ~/offlineBox/sites/primary/docker || exit
 
 # start docker
 ./1reStartDocker.sh
