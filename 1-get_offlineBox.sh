@@ -6,8 +6,8 @@ sudo apt update
 sudo apt install git
 
 # get this file to the new computer
-mkdir ~/Desktop/offlineBox || return
-cd ~/Desktop/offlineBox || exit
+mkdir ~/Desktop/offlineBox || return # could already exist
+cd ~/Desktop/offlineBox || exit # fail if it doens't exist something wrong
 git clone https://github.com/undoLogic/offlinebox.git --branch main --single-branch .
 
 # fix permissions @todo find better permissions
