@@ -3,7 +3,7 @@
 # Allowing to start the installation process on the linux ubuntu device
 
 sudo apt update
-sudo apt install git
+sudo apt install git -y
 
 # get this file to the new computer
 mkdir ~/Desktop/offlineBox || return # could already exist
