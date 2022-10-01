@@ -3,6 +3,41 @@
 # vmware tools to get copy-paste working
 # sudo apt-get install open-vm-tools
 
+#setup the wifi from our config file
+#get the wifi adapter name eg #wlp....
+ls /sys/class/net
+# next modify this file
+read -p "Copy the wifi class name"
+cd /etc/netplan/
+# Edit this file
+ls
+read -p "Modify the network file above"
+
+# EXAMPLE SETUP
+#network:
+#    ethernets:
+#        eth0:
+#            dhcp4: true
+#            optional: true
+#    version: 2
+#    wifis:
+#        wlp3s0:
+#            optional: true
+#            access-points:
+#                "SSID-NAME-HERE":
+#                    password: "PASSWORD-HERE"
+#            dhcp4: true
+
+sudo netplan apply
+# if issues do the following
+sudo netplan --debug apply
+
+# test ot see it working
+ip a
+
+
+
+
 # Install Docker
 sudo apt update
 sudo apt install curl git openssh-server
