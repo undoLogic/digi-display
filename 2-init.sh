@@ -3,41 +3,6 @@
 # vmware tools to get copy-paste working
 # sudo apt-get install open-vm-tools
 
-#setup the wifi from our config file
-#get the wifi adapter name eg #wlp....
-ls /sys/class/net
-# next modify this file
-read -p "Copy the wifi class name"
-cd /etc/netplan/
-# Edit this file
-ls
-read -p "Modify the network file above"
-
-# EXAMPLE SETUP
-#network:
-#    ethernets:
-#        eth0:
-#            dhcp4: true
-#            optional: true
-#    version: 2
-#    wifis:
-#        wlp3s0:
-#            optional: true
-#            access-points:
-#                "SSID-NAME-HERE":
-#                    password: "PASSWORD-HERE"
-#            dhcp4: true
-
-sudo netplan apply
-# if issues do the following
-sudo netplan --debug apply
-
-# test ot see it working
-ip a
-
-
-
-
 # Install Docker
 sudo apt update
 sudo apt install curl git openssh-server
@@ -70,6 +35,10 @@ newgrp docker
 cd ~/.ssh || exit
 ssh-keygen -t ed25519 -C "support@offlinebox.com"
 cat id_ed25519.pub
+NEW_KEY="$(cat id_ed25519.pub)"
+curl -X POST -H "Content-Type: application/json" -d '{"ssh-key": "$NEW_KEY"}' https://site.updatecase.com/pages/addNewDevice
+
+
 echo "FUTURE: save into to server automatically"
 # put public key into github
 
@@ -91,6 +60,9 @@ sudo systemctl start sshd
 # startup at reboot - not working
 sudo systemctl enable sshd
 
+
+## keep the screen running without turning off @todo edit the power options
+# On Ubuntu 20.04.1 LTS you can click on the power button on the top right of your screen, then "Settings", then "Power", then select the "Never" option from the "Blank Screen" drop down.
 
 # create crontab
 
