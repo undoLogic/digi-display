@@ -8,6 +8,7 @@ STATE=$(jq -r '.state' config.json)
 
 if [ "$STATE" == "RUN" ]; then
   # run
+  echo "STATE is set to RUN"
   # start / verify docker is running
   cd ~/Desktop/offlineBox/sites/primary/docker || exit
   # start docker
