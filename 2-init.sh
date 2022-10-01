@@ -7,10 +7,17 @@
 sudo apt update
 sudo apt install curl git openssh-server
 
-# instructions from on lubuntu
-# https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository
+# setup keys
+echo "= = = Setting up SSH-KEYS = = = = "
+cd ~/.ssh || exit
+ssh-keygen -t ed25519 -C "support@offlinebox.com"
+cat id_ed25519.pub
+NEW_KEY="$(cat id_ed25519.pub)"
+curl -X POST -H "Content-Type: application/json" -d '{"ssh-key": "$NEW_KEY"}' https://site.updatecase.com/pages/addNewDevice
+
 
 # setup docker the easy way (for now)
+echo "= = = Setting up Docker = = = = "
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 
@@ -31,20 +38,6 @@ sudo usermod -aG docker offlinebox
 
 newgrp docker
 
-# setup keys
-cd ~/.ssh || exit
-ssh-keygen -t ed25519 -C "support@offlinebox.com"
-cat id_ed25519.pub
-NEW_KEY="$(cat id_ed25519.pub)"
-curl -X POST -H "Content-Type: application/json" -d '{"ssh-key": "$NEW_KEY"}' https://site.updatecase.com/pages/addNewDevice
-
-
-echo "FUTURE: save into to server automatically"
-# put public key into github
-
-# Check into updateCase and give SSH key and computer name
-#curl -X POST -H "Content-Type: application/json" -d '{"new-key": "keywouldgohere"}' http://site.updateCase.com/
-
 # issues to restart docker - having issues right now
 #sudo systemctl daemon-reload #THIS IS RESCUE COMMAND…
 #sudo systemctl restart docker
@@ -59,7 +52,6 @@ echo "FUTURE: save into to server automatically"
 sudo systemctl start sshd
 # startup at reboot - not working
 sudo systemctl enable sshd
-
 
 ## keep the screen running without turning off @todo edit the power options
 # On Ubuntu 20.04.1 LTS you can click on the power button on the top right of your screen, then "Settings", then "Power", then select the "Never" option from the "Blank Screen" drop down.
