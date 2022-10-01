@@ -9,7 +9,10 @@ sudo apt install curl git openssh-server jq
 
 
 # setup keys
-echo "= = = Setting up SSH-KEYS = = = = "
+echo "====================================== Setting up SSH-KEYS =========================="
+cd ~/.ssh || exit
+ssh-keygen -t ed25519 -C "support@offlinebox.com"
+cat id_ed25519.pub
 NEW_KEY="$(cat ~/.ssh/id_ed25519.pub)"
 echo $NEW_KEY
 NEW_KEY_CLEAN2=$(echo $NEW_KEY | tr ' ' '_' | tr '\n' ' ')
@@ -21,12 +24,13 @@ curl -X POST -H "Content-Type: application/json" --data-binary "{\"ssh-key\": \"
 
 
 
-
 # setup docker the easy way (for now)
-echo "= = = Setting up Docker = = = = "
+echo "====================================== Setting up Docker =========================="
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 
+
+echo "====================================== Setting up rootless mode for docker ======="
 # run in rootless mode (no sudo)
 dockerd-rootless-setuptool.sh install
 

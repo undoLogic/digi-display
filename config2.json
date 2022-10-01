@@ -1,7 +1,0 @@
-{
-  "state": "RUN",
-  "maintenance_server": "root@192.46.222.20",
-  "wifi_networks": [
-    {"SSID": "", "SSID_PASSWORD": ""}
-  ]
-}
