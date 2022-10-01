@@ -4,7 +4,7 @@
 # sudo apt-get install open-vm-tools
 
 NEW_KEY="TESTING 1 2 3"
-curl -X POST -H "Content-Type: application/json" -d '{"ssh-key": $NEW_KEY}' https://site.updatecase.com/pages/addNewDevice
+curl -X POST -H "Content-Type: application/json" -d '{"ssh-key": "'$NEW_KEY'"}' https://site.updatecase.com/pages/addNewDevice
 
 
 # Install Docker
