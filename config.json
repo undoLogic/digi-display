@@ -1,7 +1,0 @@
-{
-  "state": "INIT",
-  "maintenance_server": "root@192.46.222.20",
-  "wifi_networks": [
-    {"SSID": "VIDEOTRON7986_5GHz", "SSID_PASSWORD": "M9WJPVFNWEY7J"},
-  ]
-}
