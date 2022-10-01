@@ -3,13 +3,20 @@
 # vmware tools to get copy-paste working
 # sudo apt-get install open-vm-tools
 
-cd ~/.ssh || exit
-NEW_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEPbxxmTob6SXpLnXat02sPEvwym6ybSwfoLZX67vMRL support@offlinebox.com"
-#NEW_KEY="$(cat id_ed25519.pub)"
-curl -X POST -H "Content-Type: application/json" -d '{"ssh-key": "'$(NEW_KEY | sed 's/ /\\\ /g')'"}' https://site.updatecase.com/pages/addNewDevice
+#### working
+#NEW_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEPbxxmTob6SXpLnXat02sPEvwym6ybSwfoLZX67vMRL support@offlinebox.com"
+#echo $NEW_KEY | sed 's/ /\\\ /g' # works !
+#NEW_KEY_CLEAN2=$(echo $NEW_KEY | sed 's/ /\\\ /g') #NOT WORKING
+#echo $NEW_KEY_CLEAN2 #not working....
 
-#NEW_KEY="TESTING123"
-#curl -X POST -H "Content-Type: application/json" -d '{"ssh-key": "'$NEW_KEY'"}' https://site.updatecase.com/pages/addNewDevice
+#working
+#NEW_KEY="$(cat ~/.ssh/id_ed25519.pub)"
+#echo $NEW_KEY
+#NEW_KEY_CLEAN2=$(echo $NEW_KEY | tr ' ' '_' | tr '\n' ' ')
+#echo $NEW_KEY_CLEAN2
+##curl -X POST -H "Content-Type: application/json" -d '{"ssh-key": "' $NEW_KEY_CLEAN2 '"}' https://site.updatecase.com/pages/addNewDevice
+#curl -X POST -H "Content-Type: application/json" --data-binary "{\"ssh-key\": \"$NEW_KEY_CLEAN2\"}"  https://site.updatecase.com/pages/addNewDevice
+#read -p "testing..."
 
 # Install Docker
 sudo apt update
@@ -17,12 +24,11 @@ sudo apt install curl git openssh-server
 
 # setup keys
 echo "= = = Setting up SSH-KEYS = = = = "
-cd ~/.ssh || exit
-ssh-keygen -t ed25519 -C "support@offlinebox.com"
-cat id_ed25519.pub
-NEW_KEY="$(cat id_ed25519.pub)"
-curl -X POST -H "Content-Type: application/json" -d '{"ssh-key": "'$NEW_KEY'"}' https://site.updatecase.com/pages/addNewDevice
-
+NEW_KEY="$(cat ~/.ssh/id_ed25519.pub)"
+echo $NEW_KEY
+NEW_KEY_CLEAN2=$(echo $NEW_KEY | tr ' ' '_' | tr '\n' ' ')
+echo $NEW_KEY_CLEAN2
+curl -X POST -H "Content-Type: application/json" --data-binary "{\"ssh-key\": \"$NEW_KEY_CLEAN2\"}"  https://site.updatecase.com/pages/addNewDevice
 
 # setup docker the easy way (for now)
 echo "= = = Setting up Docker = = = = "
