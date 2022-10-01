@@ -3,6 +3,10 @@
 # vmware tools to get copy-paste working
 # sudo apt-get install open-vm-tools
 
+NEW_KEY="TESTING 1 2 3"
+curl -X POST -H "Content-Type: application/json" -d '{"ssh-key": $NEW_KEY}' https://site.updatecase.com/pages/addNewDevice
+
+
 # Install Docker
 sudo apt update
 sudo apt install curl git openssh-server
@@ -13,7 +17,7 @@ cd ~/.ssh || exit
 ssh-keygen -t ed25519 -C "support@offlinebox.com"
 cat id_ed25519.pub
 NEW_KEY="$(cat id_ed25519.pub)"
-curl -X POST -H "Content-Type: application/json" -d '{"ssh-key": "$NEW_KEY"}' https://site.updatecase.com/pages/addNewDevice
+curl -X POST -H "Content-Type: application/json" -d '{"ssh-key": "\$NEW_KEY"}' https://site.updatecase.com/pages/addNewDevice
 
 
 # setup docker the easy way (for now)
