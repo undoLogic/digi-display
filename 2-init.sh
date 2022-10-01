@@ -17,9 +17,6 @@ sudo sh get-docker.sh
 # run in rootless mode (no sudo)
 dockerd-rootless-setuptool.sh install
 
-# allow to run as non-root
-sudo usermod -aG docker offlinebox
-
 # if errors do this
 #sudo sh -eux <<EOF
 ## Install newuidmap & newgidmap binaries
@@ -28,6 +25,11 @@ sudo usermod -aG docker offlinebox
 
 # Docker-compose (do I have to do it after docker ?)
 sudo apt install docker-compose
+
+# allow to run as non-root
+sudo usermod -aG docker offlinebox
+
+newgrp docker
 
 # setup keys
 cd ~/.ssh || exit
@@ -56,3 +58,6 @@ sudo systemctl enable sshd
 
 
 # create crontab
+
+# restart the computer so we can have docker commands without sudo
+sudo shutdown -r now

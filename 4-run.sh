@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-
 # verify ssh tunnel is active and working
 
 # start / verify docker is running
