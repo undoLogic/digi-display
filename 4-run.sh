@@ -1,15 +1,25 @@
 #!/usr/bin/env bash
 
+# general tasks on run
 # verify ssh tunnel is active and working
 
-# start / verify docker is running
-cd ~/Desktop/offlineBox/sites/primary/docker || exit
+# check our state
+STATE=$(jq '.state' config2.json)
+echo $STATE
 
-# start docker
-./1reStartDocker.sh
+if [ "$STATE" == "RUN" ]; then
+  # run
+  # start / verify docker is running
+  cd ~/Desktop/offlineBox/sites/primary/docker || exit
+  # start docker
+  ./1reStartDocker.sh
+  # this should be moved into a config - what the starting page is
+  firefox -kiosk http://localhost/sourceFiles/pages/signage
+else
+  # do not run
+  echo "cannot run"
+  echo "$STATE"
+fi
 
-# run firefox in kiosk mode with the website from the profile
-# firefox –kiosk www.undologic.com/pages/signage
 
-# this should be moved into a config - what the starting page is
-firefox -kiosk http://localhost/sourceFiles/pages/signage
+

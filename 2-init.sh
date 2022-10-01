@@ -5,10 +5,7 @@
 
 # Install Docker
 sudo apt update
-sudo apt install curl git openssh-server
-
-
-
+sudo apt install curl git openssh-server jq
 
 
 # setup keys
