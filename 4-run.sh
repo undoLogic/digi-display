@@ -4,7 +4,7 @@
 # verify ssh tunnel is active and working
 
 # check our state
-STATE=$(jq '.state' config2.json)
+STATE=$(jq '.state' config.json)
 echo $STATE
 
 if [ "$STATE" == "RUN" ]; then
