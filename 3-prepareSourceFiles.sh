@@ -8,3 +8,4 @@ cd sites/domain.com || exit
 git clone git@github.com:undologic/updateCase-undologic.git --branch master --single-branch .
 
 
+chmod 777 -R *

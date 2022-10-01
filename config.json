@@ -1,3 +1,4 @@
 {
-  "variant_id": 123
+  "state": "UPGRADE",
+  "maintenance_server": "root@192.46.222.20"
 }
