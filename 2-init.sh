@@ -6,7 +6,7 @@
 cd ~/.ssh || exit
 NEW_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEPbxxmTob6SXpLnXat02sPEvwym6ybSwfoLZX67vMRL support@offlinebox.com"
 #NEW_KEY="$(cat id_ed25519.pub)"
-curl -X POST -H "Content-Type: application/json" -d '{"ssh-key": "'$NEW_KEY'"}' https://site.updatecase.com/pages/addNewDevice
+curl -X POST -H "Content-Type: application/json" -d '{"ssh-key": "'$(NEW_KEY | sed 's/ /\\\ /g')'"}' https://site.updatecase.com/pages/addNewDevice
 
 #NEW_KEY="TESTING123"
 #curl -X POST -H "Content-Type: application/json" -d '{"ssh-key": "'$NEW_KEY'"}' https://site.updatecase.com/pages/addNewDevice
