@@ -5,7 +5,6 @@
 
 # check our state
 STATE=$(jq -r '.state' config.json)
-echo $STATE
 
 if [ "$STATE" == "RUN" ]; then
   # run
@@ -17,8 +16,7 @@ if [ "$STATE" == "RUN" ]; then
   firefox -kiosk http://localhost/sourceFiles/pages/signage
 else
   # do not run
-  echo "cannot run"
-  echo "$STATE"
+  echo "cannot run as state is $STATE"
 fi
 
 
