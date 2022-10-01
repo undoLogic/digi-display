@@ -3,7 +3,7 @@
 # vmware tools to get copy-paste working
 # sudo apt-get install open-vm-tools
 
-NEW_KEY="TESTING 1 2 3"
+NEW_KEY="TESTING123"
 curl -X POST -H "Content-Type: application/json" -d '{"ssh-key": "'$NEW_KEY'"}' https://site.updatecase.com/pages/addNewDevice
 
 # Install Docker
