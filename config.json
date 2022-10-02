@@ -1,6 +1,8 @@
 {
-  "state": "RUN",
-  "maintenance_server": "root@192.46.222.20",
+  "run": true,
+  "maintenance_active": true,
+  "maintenance_server": "root@maintenance.offlinebox.com",
+  "maintenance_server_tunnel_port": "43022",
   "wifi_networks": [
     {"SSID": "", "SSID_PASSWORD": ""}
   ]

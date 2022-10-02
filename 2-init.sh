@@ -10,6 +10,7 @@ sudo apt install curl git openssh-server jq
 
 # setup keys
 echo "====================================== Setting up SSH-KEYS =========================="
+logger "OfflineBox: setting up SSH-KEYS"
 cd ~/.ssh || exit
 ssh-keygen -t ed25519 -C "support@offlinebox.com"
 cat id_ed25519.pub
@@ -19,18 +20,20 @@ NEW_KEY_CLEAN2=$(echo $NEW_KEY | tr ' ' '_' | tr '\n' ' ')
 echo $NEW_KEY_CLEAN2
 #send keys to our server
 curl -X POST -H "Content-Type: application/json" --data-binary "{\"ssh-key\": \"$NEW_KEY_CLEAN2\"}"  https://site.updatecase.com/pages/addNewDevice
-
+logger "OfflineBox: sent new key to server"
 
 
 
 
 # setup docker the easy way (for now)
 echo "====================================== Setting up Docker =========================="
+logger "OfflineBox: setting up Docker"
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 
 
 echo "====================================== Setting up rootless mode for docker ======="
+logger "OfflineBox: setting up rootless mode for docker"
 # run in rootless mode (no sudo)
 dockerd-rootless-setuptool.sh install
 
@@ -41,6 +44,7 @@ dockerd-rootless-setuptool.sh install
 #EOF
 
 # Docker-compose (do I have to do it after docker ?)
+logger "OfflineBox: setting up Docker-compose"
 sudo apt install docker-compose
 
 # allow to run as non-root

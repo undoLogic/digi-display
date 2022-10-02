@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 
 # maintenance mode
-# ssh tunnel into a random server created on the fly (for security)
+# ssh tunnel into a random server created on the fly for security (@todo create api generation of servers)
 # allowing staff to login to this machine and perform maintenance
-MAINTENANCE_SERVER="root@192.46.222.20"
-PORT=43022
+
+MAINTENANCE_SERVER=$(jq -r '.maintenance_server' config.json)
+PORT=$(jq -r '.maintenance_server_tunnel_port' config.json)
 
 ########################################################################################################################
 # setup tunnel REMOTE -> VPS
-#ssh -R 43022:localhost:22 -i id_rsa root@147.182.145.17
+#@todo create a non root user for higher security access
+ssh -R "$PORT":root@localhost:22 "$MAINTENANCE_SERVER"
+#eg ssh -R 43022:root@localhost:22 root@maintenance.offlinebox.com
 
-ssh -R $PORT:localhost:22 -i id_rsa $MAINTENANCE_SERVER
-
-#then login to VPS and establish tunnel back to REMOTE
-#ssh localhost -p 43022
+########## then login to VPS and establish tunnel back to REMOTE
+# ssh offlinebox@localhost -p 43022

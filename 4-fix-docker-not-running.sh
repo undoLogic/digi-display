@@ -4,6 +4,8 @@
 sudo systemctl daemon-reload #THIS IS RESCUE COMMAND…
 sudo systemctl restart docker
 sudo systemctl status docker
-docker pull hello-world
+
+# if you want to verify the hello world
+# docker pull hello-world
 ##Using default tag: latest
 ##latest: Pulling from library/hello-world
