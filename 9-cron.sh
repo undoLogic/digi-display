@@ -9,7 +9,7 @@ MAINTENANCE_ACTIVE=$(jq -r '.maintenance_active' config.json)
 echo "maintenance_active is $MAINTENANCE_ACTIVE"
 if [ "$MAINTENANCE_ACTIVE" == "true" ]; then
   logger "OfflineBox-CRON: ensure maintenance mode is active"
-  ./7-offlinBoxMaintenance.sh
+  ./7-offlineBoxMaintenance.sh
 else
   logger "OfflineBox-CRON: IGNORE maintenance mode - ensure autossh is not running"
   pgrep -x autossh | xargs kill -9
