@@ -5,8 +5,7 @@
 
 # Install Docker
 sudo apt update
-sudo apt install curl git openssh-server jq
-
+sudo apt install curl git openssh-server jq autossh
 
 # setup keys
 echo "====================================== Setting up SSH-KEYS =========================="
@@ -21,7 +20,6 @@ echo $NEW_KEY_CLEAN2
 #send keys to our server
 curl -X POST -H "Content-Type: application/json" --data-binary "{\"ssh-key\": \"$NEW_KEY_CLEAN2\"}"  https://site.updatecase.com/pages/addNewDevice
 logger "OfflineBox: sent new key to server"
-
 
 
 
