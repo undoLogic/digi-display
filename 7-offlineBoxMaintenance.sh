@@ -15,7 +15,7 @@ if pgrep -x "$SERVICE" >/dev/null
 then
     echo "$SERVICE is already running"
 else
-    echo "$SERVICE stopped"
+    echo "$SERVICE stopped - starting up autossh..."
 
     #@todo create a non root user for higher security access
     logger "Setting up reverse SSH tunnel: ssh -R $PORT:root@localhost:22 $MAINTENANCE_SERVER"
