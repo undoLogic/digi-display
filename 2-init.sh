@@ -78,6 +78,7 @@ then
   if [ "$doFix" == 'fix' ]
   then
       # if errors do this
+        logger "docker rootless FIX command to fix errors"
 sudo sh -eux <<EOF
 # Install newuidmap & newgidmap binaries
 apt-get install -y uidmap
