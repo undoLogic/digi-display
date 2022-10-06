@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
-if [ -z $1 ]
+if [ -z "$1" ]
 then
-  INSTALL_SOFTWARE=false
-  UPDATE_COMPUTER_SETTINGS=false
-  SETUP_KEYS=false
-  INSTALL_DOCKER=false
-  DOCKER_ROOTLESS=true
-  INSTALL_DOCKER_COMPOSE=false
-  INSTALL_SSH_TUNNEL=false
-  CREATE_CRON=false
+  INSTALL_SOFTWARE=true
+  UPDATE_COMPUTER_SETTINGS=true
+  SETUP_KEYS=true
+  INSTALL_DOCKER=true
+  DOCKER_ROOTLESS=false
+  INSTALL_DOCKER_COMPOSE=true
+  INSTALL_SSH_TUNNEL=true
+  CREATE_CRON=true
   RESTART=false
 else
   # future add ability to use $1 to choose a specific to run
@@ -20,8 +20,8 @@ fi
 if $INSTALL_SOFTWARE
 then
   sudo apt update
-  logger "Installing: curl git openssh-server jq autossh -y"
-  sudo apt install curl git openssh-server jq autossh -y
+  logger "Installing: curl git openssh-server jq autossh uidmap"
+  sudo apt install -y curl git openssh-server jq autossh uidmap
   # vmware tools to get copy-paste working
   # sudo apt-get install open-vm-tools
 fi
@@ -51,6 +51,18 @@ then
   curl -X POST -H "Content-Type: application/json" --data-binary "{\"ssh-key\": \"$NEW_KEY_CLEAN2\"}"  https://site.updatecase.com/pages/addNewDevice
   logger "OfflineBox: sent new key to server"
 fi
+
+
+# ===========================================================================================
+if $INSTALL_SSH_TUNNEL
+then
+  # first time start it up
+  sudo systemctl start sshd
+  # startup at reboot - not working
+  sudo systemctl enable sshd
+fi
+
+
 # ====================================================================== Docker
 # setup docker the easy way (for now)
 
@@ -61,55 +73,33 @@ then
   sudo sh get-docker.sh
 fi
 
-# ===================================================================== docker rootless
-if $DOCKER_ROOTLESS
-then
-  logger "OfflineBox: setting up rootless mode for docker"
-  # run in rootless mode (no sudo)
-  dockerd-rootless-setuptool.sh install
-
-  # allow to run as non-root
-  sudo usermod -aG docker offlinebox
-
-  newgrp docker
-
-  read -p "Did rootless install successfully ? type 'fix' to fix errors" doFix
-
-  if [ "$doFix" == 'fix' ]
-  then
-      # if errors do this
-        logger "docker rootless FIX command to fix errors"
-sudo sh -eux <<EOF
-# Install newuidmap & newgidmap binaries
-apt-get install -y uidmap
-EOF
-  fi
-fi
-
 # ================================================================= Install Docker Compose
 if $INSTALL_DOCKER_COMPOSE
 then
   # Docker-compose (do I have to do it after docker ?)
   logger "OfflineBox: setting up Docker-compose"
-  sudo apt install docker-compose
+  sudo apt install docker-compose -y
 fi
 
-# ===========================================================================================
-if $INSTALL_SSH_TUNNEL
-then
-  # first time start it up
-  sudo systemctl start sshd
-  # startup at reboot - not working
-  sudo systemctl enable sshd
-fi
-############# SSH tunnel
-
+# ================================================================= Cron
 if $CREATE_CRON
 then
   # create crontab
   logger "will figure out how to install crontab here"
 fi
 
+# ===================================================================== docker rootless
+if $DOCKER_ROOTLESS
+then
+  logger "OfflineBox: setting up rootless mode for docker"
+  # run in rootless mode (no sudo)
+  dockerd-rootless-setuptool.sh install
+  # allow to run as non-root
+  sudo usermod -aG docker offlinebox
+  newgrp docker
+fi
+
+# ================================================================= Restart
 if $RESTART
 then
   # restart the computer so we can have docker commands without sudo
