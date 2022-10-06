@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 INSTALL_SOFTWARE=true
-UPDATE_COMPUTER_SETTINGS=false
+UPDATE_COMPUTER_SETTINGS=true
 SETUP_KEYS=false
 INSTALL_DOCKER=false
 DOCKER_ROOTLESS=false
@@ -14,7 +14,8 @@ RESTART=false
 if $INSTALL_SOFTWARE
 then
   sudo apt update
-  sudo apt install curl git openssh-server jq autossh
+  logger "Installing: curl git openssh-server jq autossh -y"
+  sudo apt install curl git openssh-server jq autossh -y
   # vmware tools to get copy-paste working
   # sudo apt-get install open-vm-tools
 fi
@@ -25,6 +26,7 @@ then
   # keep the screen running without turning off
   # On Ubuntu 20.04.1 LTS you can click on the power button on the top right of your screen, then "Settings",
   # then "Power", then select the "Never" option from the "Blank Screen" drop down.
+  logger "Disabling auto lock on computer"
   gsettings set org.gnome.desktop.screensaver lock-enabled false
 fi
 # ======================================================================= SSH keys
