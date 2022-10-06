@@ -5,8 +5,8 @@ then
   INSTALL_SOFTWARE=false
   UPDATE_COMPUTER_SETTINGS=false
   SETUP_KEYS=false
-  INSTALL_DOCKER=true
-  DOCKER_ROOTLESS=false
+  INSTALL_DOCKER=false
+  DOCKER_ROOTLESS=true
   INSTALL_DOCKER_COMPOSE=false
   INSTALL_SSH_TUNNEL=false
   CREATE_CRON=false
@@ -72,11 +72,17 @@ then
   sudo usermod -aG docker offlinebox
 
   newgrp docker
-  # if errors do this
-  #sudo sh -eux <<EOF
-  ## Install newuidmap & newgidmap binaries
-  #apt-get install -y uidmap
-  #EOF
+
+  read -p "Did rootless install successfully ? type 'fix' to fix errors" doFix
+
+  if [ "$doFix" == 'fix' ]
+  then
+      # if errors do this
+sudo sh -eux <<EOF
+# Install newuidmap & newgidmap binaries
+apt-get install -y uidmap
+EOF
+  fi
 fi
 
 # ================================================================= Install Docker Compose
