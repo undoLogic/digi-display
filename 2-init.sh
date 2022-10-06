@@ -1,14 +1,20 @@
 #!/usr/bin/env bash
 
-INSTALL_SOFTWARE=true
-UPDATE_COMPUTER_SETTINGS=true
-SETUP_KEYS=false
-INSTALL_DOCKER=false
-DOCKER_ROOTLESS=false
-INSTALL_DOCKER_COMPOSE=false
-INSTALL_SSH_TUNNEL=false
-CREATE_CRON=false
-RESTART=false
+if [ -z $1 ]
+then
+  INSTALL_SOFTWARE=false
+  UPDATE_COMPUTER_SETTINGS=false
+  SETUP_KEYS=true
+  INSTALL_DOCKER=false
+  DOCKER_ROOTLESS=false
+  INSTALL_DOCKER_COMPOSE=false
+  INSTALL_SSH_TUNNEL=false
+  CREATE_CRON=false
+  RESTART=false
+else
+  # future add ability to use $1 to choose a specific to run
+  echo "Not Implemented Yet"
+fi
 
 # ======================================================================= Install software
 if $INSTALL_SOFTWARE
@@ -73,7 +79,7 @@ then
   #EOF
 fi
 
-# ===========================================================================================
+# ================================================================= Install Docker Compose
 if $INSTALL_DOCKER_COMPOSE
 then
   # Docker-compose (do I have to do it after docker ?)
