@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 
-# @todo move into external json file sites/primary.json
-github_url="undoLogic/updateCase-undoLogic"
-
-########################################################################################################################
+github_url=$(jq -r '.github_url' config.json)
 
 # checkout files from github
 cd ~/Desktop/offlineBox/sites/primary || exit
