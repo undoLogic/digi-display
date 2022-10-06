@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-if [ -z "$1" ]
+if [ -z $1 ]
 then
   INSTALL_SOFTWARE=true
   UPDATE_COMPUTER_SETTINGS=true
@@ -78,7 +78,7 @@ if $INSTALL_DOCKER_COMPOSE
 then
   # Docker-compose (do I have to do it after docker ?)
   logger "OfflineBox: setting up Docker-compose"
-  sudo apt install docker-compose -y
+  sudo apt install -y docker-compose
 fi
 
 # ================================================================= Cron
