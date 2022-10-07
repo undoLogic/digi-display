@@ -6,7 +6,7 @@ PORT=$(jq -r '.maintenance_server_tunnel_port' config.json)
 SERVICE="autossh"
 if pgrep -x "$SERVICE" >/dev/null
 then
-    if [ $1 == 'stop' ]
+    if [ "$1" == 'stop' ]
     then
       pkill autossh
       logger -s "OfflineBox: SHUTTING DOWN Maintenance server"
