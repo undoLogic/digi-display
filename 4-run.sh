@@ -4,7 +4,8 @@
 if pgrep -x "firefox" > /dev/null
 then
 
-      logger "offlineBox: Starting firefox"
+  echo "Firefox running"
+  logger "offlineBox: Firefox already running"
 
 #      # start / verify docker is running
 #      cd ~/Desktop/offlineBox/sites/primary/docker/ || exit
@@ -18,6 +19,6 @@ then
 #
 #      firefox -kiosk http://localhost/sourceFiles/pages/signage
 else
-      echo "Firefox running"
-      logger "offlineBox: Firefox already running"
+  echo "Starting firefox"
+  logger "offlineBox: Starting firefox"
 fi
