@@ -2,7 +2,7 @@
   "run": true,
   "github_url": "undoLogic/updateCase-undoLogic",
   "maintenance_active": true,
-  "maintenance_server": "root@maintenance.offlinebox.com",
+  "maintenance_server": "root@ping.offlinebox.com",
   "maintenance_server_tunnel_port": "43022",
   "wifi_networks": [
     {"SSID": "", "SSID_PASSWORD": ""}
