@@ -18,7 +18,6 @@ fi
 
 
 
-
 RUN=$(jq -r '.run' config.json)
 echo "run is $RUN"
 
