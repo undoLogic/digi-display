@@ -6,7 +6,7 @@
 ls /sys/class/net
 # next modify this file
 read -p "Copy the wifi class name"
-cd /etc/netplan/
+cd /etc/netplan/ || exit
 # Edit this file
 ls
 read -p "Modify the network file above"
