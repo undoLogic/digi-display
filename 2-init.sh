@@ -20,8 +20,8 @@ fi
 if $INSTALL_SOFTWARE
 then
   sudo apt update
-  logger "Installing: curl git openssh-server jq autossh uidmap"
-  sudo apt install -y curl git openssh-server jq autossh uidmap
+  logger "Installing: curl git openssh-server jq autossh uidmap screen"
+  sudo apt install -y curl git openssh-server jq autossh uidmap screen
   # vmware tools to get copy-paste working
   # sudo apt-get install open-vm-tools
 fi

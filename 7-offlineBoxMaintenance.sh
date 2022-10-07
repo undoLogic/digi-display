@@ -14,6 +14,11 @@ SERVICE="autossh"
 if pgrep -x "$SERVICE" >/dev/null
 then
     echo "$SERVICE is already running"
+    if [ $1 == 'stop' ]
+    then
+      pkill autossh
+      echo "Stopping autossh..."
+    fi
 else
     echo "$SERVICE stopped - starting up autossh..."
 
@@ -21,10 +26,15 @@ else
     logger "Setting up reverse SSH tunnel: ssh -R $PORT:root@localhost:22 $MAINTENANCE_SERVER"
 
     # @todo autossh not working yet, so trying to get ssh in the background for now
-    ssh -R "$PORT":localhost:22 "$MAINTENANCE_SERVER"
+    #ssh -R "$PORT":localhost:22 "$MAINTENANCE_SERVER"
 
     # @todo get this working
-    #autossh -f -R -N "$PORT":localhost:22 "$MAINTENANCE_SERVER"
+    #autossh -M 20000 -N -R "$PORT":localhost:22 "$MAINTENANCE_SERVER"
+
+    #autossh -M 0 -o "ServerAliveInterval 30" -o "ServerAliveCountMax 3" -fN -T -R 10000:localhost:22 console@<myvpnip>
+    autossh -M 0 -o "ServerAliveInterval 30" -o "ServerAliveCountMax 3" -fN -T -R "$PORT":localhost:22 "$MAINTENANCE_SERVER"
+    #autossh -M 0 -o "ServerAliveInterval 30" -o "ServerAliveCountMax 3" -fN -T -R 43022:localhost:22 root@ping.offlinebox.com
+
 
     #eg ssh -R 43022:root@localhost:22 root@maintenance.offlinebox.com
     #autossh -R 43022:localhost:22 root@maintenance.offlinebox.com
@@ -34,11 +44,6 @@ else
     # mail
 fi
 
-
-
-
-
-
-
 ########## then login to VPS and establish tunnel back to REMOTE
 # ssh offlinebox@localhost -p 43022
+
