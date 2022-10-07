@@ -3,6 +3,7 @@
 # @todo check if docker is already running
 if pgrep -x "firefox" > /dev/null
 then
+
       logger "offlineBox: Starting firefox"
       # start / verify docker is running
       cd ~/Desktop/offlineBox/sites/primary/docker/ || exit
