@@ -13,7 +13,8 @@ PORT=$(jq -r '.maintenance_server_tunnel_port' config.json)
 SERVICE="autossh"
 if pgrep -x "$SERVICE" >/dev/null
 then
-    echo "$SERVICE is already running"
+    echo "$SERVICE is already running (use first arg stop if you want to stop)"
+
     if [ $1 == 'stop' ]
     then
       pkill autossh
