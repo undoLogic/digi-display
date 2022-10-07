@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+export DISPLAY=:0
+
 # @todo check if docker is already running
 if pgrep -x "firefox" > /dev/null
 then
