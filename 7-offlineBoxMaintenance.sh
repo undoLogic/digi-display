@@ -9,13 +9,12 @@ then
     if [ $1 == 'stop' ]
     then
       pkill autossh
-      echo "Stopping AutoSSH..."
+      logger -s "OfflineBox: SHUTTING DOWN Maintenance server"
     else
-      echo "$SERVICE is already running (use first arg stop if you want to stop)"
+      logger -s "OfflineBox: Maintenance server already running (use first arg 'stop' if you want to stop)"
     fi
 else
-    echo "$SERVICE stopped - starting up autossh..."
-    logger "Setting up reverse SSH tunnel: ssh -R $PORT:root@localhost:22 $MAINTENANCE_SERVER"
+    logger "OfflineBox: Starting MAINTENANCE_SERVER - Setting up reverse SSH tunnel: ssh -R $PORT:root@localhost:22 $MAINTENANCE_SERVER"
 
     #@todo create a non root user for higher security access
     #autossh -M 0 -o "ServerAliveInterval 30" -o "ServerAliveCountMax 3" -fN -T -R 10000:localhost:22 console@<myvpnip>
