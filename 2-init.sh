@@ -34,6 +34,10 @@ then
   # then "Power", then select the "Never" option from the "Blank Screen" drop down.
   logger "Disabling auto lock on computer"
   gsettings set org.gnome.desktop.screensaver lock-enabled false
+  # disable popup for updates
+  logger "Disabling updates popup"
+  # I read the we could also just remove this file ? /etc/xdg/autostart/update-notifier.desktop
+  sudo bash -c 'echo "Hidden=true" >> /etc/xdg/autostart/update-notifier.desktop'
 fi
 # ======================================================================= SSH keys
 if $SETUP_KEYS
