@@ -38,6 +38,17 @@ then
   logger "Disabling updates popup"
   # I read the we could also just remove this file ? /etc/xdg/autostart/update-notifier.desktop
   sudo bash -c 'echo "Hidden=true" >> /etc/xdg/autostart/update-notifier.desktop'
+  # maybe also even disable all background updates ?
+  #  $ cat /etc/apt/apt.conf.d/20auto-upgrades
+  #  APT::Periodic::Update-Package-Lists "0";
+  #  APT::Periodic::Download-Upgradeable-Packages "0";
+  #  APT::Periodic::AutocleanInterval "0";
+  #  APT::Periodic::Unattended-Upgrade "0";
+  #$ cat /etc/apt/apt.conf.d/10periodic
+  #APT::Periodic::Update-Package-Lists "0";
+  #APT::Periodic::Download-Upgradeable-Packages "0";
+  #APT::Periodic::AutocleanInterval "0";
+  #APT::Periodic::Unattended-Upgrade "0";
 fi
 # ======================================================================= SSH keys
 if $SETUP_KEYS
