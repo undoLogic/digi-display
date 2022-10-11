@@ -33,7 +33,7 @@ then
   # On Ubuntu 20.04.1 LTS you can click on the power button on the top right of your screen, then "Settings",
   # then "Power", then select the "Never" option from the "Blank Screen" drop down.
   logger "Disabling auto lock on computer"
-  # gsettings set org.gnome.desktop.screensaver lock-enabled false
+  gsettings set org.gnome.desktop.screensaver lock-enabled false
   gsettings set org.gnome.desktop.screensaver idle-activation-enabled false
   gsettings set org.gnome.desktop.session idle-delay 0
   gsettings set org.gnome.settings-daemon.plugins.power idle-dim false
