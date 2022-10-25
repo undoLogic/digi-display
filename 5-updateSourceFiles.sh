@@ -3,4 +3,5 @@
 cd ~/Desktop/offlineBox/sites/primary || exit
 
 # update to the newest version
-git update
+git git reset --hard origin/master
+git pull --force
