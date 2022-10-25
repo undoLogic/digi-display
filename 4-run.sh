@@ -24,7 +24,8 @@ else
   # shellcheck disable=SC2046
   kill -9 $(ps -x | grep firefox)
 
-  firefox -kiosk http://localhost/sourceFiles/pages/gallery
+  #firefox -kiosk http://localhost/sourceFiles/pages/gallery
+  firefox http://localhost/sourceFiles/pages/gallery
 
   logger "offlineBox: Firefox has been started"
 
