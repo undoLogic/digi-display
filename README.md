@@ -1,12 +1,12 @@
-# OfflineBox: Custom Digital Display Solution
+# Digi-Display: Custom Digital Display Solution
 
 To prepare a new device
 - After you install the new ubuntu system
 - open a browser and type:
 ```
-http://get.offlinebox.com
+http://get.digi-display.com
 ```
-- This will download the 1-download.sh script called: get_offlinebox.sh
+- This will download the 1-download.sh script called: get_digi-display.sh
 
 
 
