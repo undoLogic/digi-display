@@ -10,8 +10,8 @@ url=$(jq -r '.url' ~/Desktop/config.json)
 kiosk=$(jq -r '.kiosk' ~/Desktop/config.json)
 echo "running url $url"
 
-if [ kiosk ]; then
-  # firefox --kiosk $url
+if [ "$kiosk" = "true" ]; then
+  firefox --kiosk $url
 else
   firefox $url
 fi
