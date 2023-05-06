@@ -1,6 +1,3 @@
 {
-  "url": "",
-  "wifi_networks": [
-    {"SSID": "", "SSID_PASSWORD": ""}
-  ]
+  "url": ""
 }
