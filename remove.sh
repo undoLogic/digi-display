@@ -15,4 +15,4 @@ cd ~/Desktop || exit # fail if it doens't exist something wrong
 #rm runDigiDisplay.sh
 #rm remove.sh
 
-rm ~/Desktop/digiDisplay
+rm -rf ~/Desktop/digiDisplay
