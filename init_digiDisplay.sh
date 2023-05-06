@@ -12,6 +12,7 @@ sudo apt-get update
 sudo apt-get install jq git -y
 
 cd ~/Desktop || exit # fail if it doens't exist something wrong
+mkdir ~/Desktop/digiDisplay || return # could already exist
 cd ~/Desktop/digiDisplay || exit # fail if it doens't exist something wrong
 
 git clone https://github.com/undoLogic/digi-display.git --branch main --single-branch .
