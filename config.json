@@ -1,6 +1,4 @@
 {
-  "run": true,
-  "projectID": 123,
   "url": "",
   "wifi_networks": [
     {"SSID": "", "SSID_PASSWORD": ""}
