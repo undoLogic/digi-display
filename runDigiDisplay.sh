@@ -7,6 +7,11 @@ while [ "$(hostname -I)" = "" ]; do
 done
 
 url=$(jq -r '.url' ~/Desktop/config.json)
+kiosk=$(jq -r '.kiosk' ~/Desktop/config.json)
 echo "running url $url"
-# firefox --kiosk $url
-firefox $url
+
+if [ kiosk ]; then
+  # firefox --kiosk $url
+else
+  firefox $url
+fi
