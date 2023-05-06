@@ -6,29 +6,40 @@ To prepare a new device
 ```
 http://get.digi-display.com
 ```
-- This will download the 1-download.sh script called: get_digi-display.sh
+- This will download the init_digiDisplay.sh to ~/Downloads
 
+- open terminal and give execute permissions
+```angular2html
+cd ~/Downloads
+chmod +x init_digiDisplay.sh
+```
 
+### Manual steps
+Disable power settings to keep the screen running
+- Settings
+- Power
+- Power mode PERFORMANCE
+- Dim Screen UNCHECK
+- Screen Blank OFF
 
-1-download.sh
-- 
+### Configure
+open ~/Desktop/digiDisplay/config.json
+url: Add the website url
+kiosk: true will make the website full screen false will make it windowed
 
-Config.json
-- this is the overall settings file. Allows to setup the initial structure
+### Configure WiFi
+Follow the instructions how to connect to your WiFi network 
+https://www.digi-display.com/Pages/faqs
 
-cron-activate.sh
-- This will ensure that run.sh is restarted if it stops running
+### START SCREEN
+open ~/Desktop/digiDisplay
+./runDigiDisplay.sh
 
-profile.json
-- Config will download this file. This file will choose what the display shows. eg which site will be visualized. 
-
-run.sh
-- Check's in to UpdateCase.com
-- some type of key here
-- Send config.json
-- get's profile.json
-- run profile
-- git clone files into sites/domain.com
-- start up docker
-- run firefox kiosk mode
-
+### Setup automatic opening screen on boot
+Settings
+Startup Applications
+Add
+Name: runDigiDisplay
+Command -> Browse -> Desktop -> DigiDisplay -> runDigiDisplay.sh -> click OPEN
+Then click 'ADD'
+Reboot your computer and when it boots up the screen mode will automatically start up 
