@@ -6,6 +6,7 @@ while [ "$(hostname -I)" = "" ]; do
   sleep 2
 done
 
-url=$(jq -r '.url' config.json)
+url=$(jq -r '.url' ~/Desktop/config.json)
+echo "running url $url"
 # firefox --kiosk $url
 firefox $url
