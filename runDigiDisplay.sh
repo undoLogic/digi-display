@@ -6,8 +6,8 @@ while [ "$(hostname -I)" = "" ]; do
   sleep 2
 done
 
-url=$(jq -r '.url' ~/Desktop/config.json)
-kiosk=$(jq -r '.kiosk' ~/Desktop/config.json)
+url=$(jq -r '.url' ~/Desktop/digiDisplay/config.json)
+kiosk=$(jq -r '.kiosk' ~/Desktop/digiDisplay/config.json)
 echo "running url $url"
 
 if [ "$kiosk" = "true" ]; then
