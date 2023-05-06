@@ -10,7 +10,7 @@ url=$(jq -r '.url' ~/Desktop/digiDisplay/config.json)
 kiosk=$(jq -r '.kiosk' ~/Desktop/digiDisplay/config.json)
 echo "running url $url"
 
-if [ "$kiosk" = "true" ]; then
+if [ $kiosk = true ]; then
   firefox --kiosk $url
 else
   firefox $url
