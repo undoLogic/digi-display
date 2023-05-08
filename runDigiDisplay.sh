@@ -11,7 +11,7 @@ kiosk=$(jq -r '.kiosk' ~/Desktop/digiDisplay/config.json)
 echo "running url $url"
 
 if [ $kiosk = true ]; then
-  firefox --kiosk $url
+  firefox --no-remote --new-instance --kiosk $url
 else
-  firefox $url
+  firefox --no-remote --new-instance $url
 fi
