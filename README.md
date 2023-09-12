@@ -23,17 +23,17 @@ Disable power settings to keep the screen running
 - Screen Blank OFF
 
 ### Configure
-open ~/Desktop/digiDisplay/config.json
-url: Add the website url
-kiosk: true will make the website full screen false will make it windowed
+- open ~/Desktop/digiDisplay/config.json
+- url: Add the website url
+- kiosk: true will make the website full screen false will make it windowed
 
 ### Configure WiFi
 Follow the instructions how to connect to your WiFi network 
 https://www.digi-display.com/Pages/faqs
 
 ### START SCREEN
-open ~/Desktop/digiDisplay
-./runDigiDisplay.sh
+- open ~/Desktop/digiDisplay
+- ./runDigiDisplay.sh (right click and choose open as program)
 
 ### Setup automatic opening screen on boot
 Settings
@@ -47,24 +47,8 @@ Settings
 - Next unplug and replug to ensure it is setup to auto start after a power failure (adjust in bios if doesn't auto turn on)
 
 ### Disable popups
-Since this is running in a public environment we don't want to see any popups
-```php
-sudo nano /etc/xdg/autostart/update-notifier.desktop
-```
-Then change the attribute: NoDisplay=true
-
+- Coming soon...
 
 ### Prevent browser sessions
 Prevent firefox from keeping a session which will mess up the loading process for the kiosk mode
-- In terminal 
-```shell
-firefox -CreateProfile "kiosk_profile"
-```
-- Next we are going to edit the firefox launch to include this
-```shell
-sudo nano /usr/share/applications/firefox.desktop
-```
-- Locate "Exec=firefox %u" and replace with
-```shell
-Exec=firefox -P kiosk_profile --private-window %u
-```
+- Options -> History -> Never remember history
