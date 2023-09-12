@@ -50,6 +50,5 @@ Settings
 Since this is running in a public environment we don't want to see any popups
 ```php
 sudo nano /etc/xdg/autostart/update-notifier.desktop
-# Adjust setting
-NoDisplay=true
 ```
+Then change the attribute: NoDisplay=true
