@@ -36,7 +36,8 @@ https://www.digi-display.com/Pages/faqs
 - ./runDigiDisplay.sh (right click and choose open as program)
 
 ### Setup automatic opening screen on boot
-Settings
+Auto opens the full screen display after the computer has booted
+- Search on ubuntu
 - Startup Applications
 - Add
 - Name: runDigiDisplay
