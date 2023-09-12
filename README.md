@@ -53,3 +53,9 @@ Auto opens the full screen display after the computer has booted
 ### Prevent browser sessions
 Prevent firefox from keeping a session which will mess up the loading process for the kiosk mode
 - Options -> History -> Never remember history
+
+### Change background image
+Right click on the desktop background and choose Change Background Image
+- Top: Add Picture
+- Navigate to Home -> digiDisplay -> screen-loading-image.jpg
+- Then choose to activate
