@@ -37,9 +37,19 @@ open ~/Desktop/digiDisplay
 
 ### Setup automatic opening screen on boot
 Settings
-Startup Applications
-Add
-Name: runDigiDisplay
-Command -> Browse -> Desktop -> DigiDisplay -> runDigiDisplay.sh -> click OPEN
-Then click 'ADD'
-Reboot your computer and when it boots up the screen mode will automatically start up 
+- Startup Applications
+- Add
+- Name: runDigiDisplay
+- Command -> Browse -> Desktop -> DigiDisplay -> runDigiDisplay.sh -> click OPEN
+- Then click 'ADD'
+- IMPORTANT: ensure you close all windows and do a graceful reboot to ensure the changes are persistent
+- Reboot your computer and when it boots up the screen mode will automatically start up 
+- Next unplug and replug to ensure it is setup to auto start after a power failure (adjust in bios if doesn't auto turn on)
+
+### Disable popups
+Since this is running in a public environment we don't want to see any popups
+```php
+sudo nano /etc/xdg/autostart/update-notifier.desktop
+# Adjust setting
+NoDisplay=true
+```
