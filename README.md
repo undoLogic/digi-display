@@ -52,3 +52,19 @@ Since this is running in a public environment we don't want to see any popups
 sudo nano /etc/xdg/autostart/update-notifier.desktop
 ```
 Then change the attribute: NoDisplay=true
+
+
+### Prevent browser sessions
+Prevent firefox from keeping a session which will mess up the loading process for the kiosk mode
+- In terminal 
+```shell
+firefox -CreateProfile "kiosk_profile"
+```
+- Next we are going to edit the firefox launch to include this
+```shell
+sudo nano /usr/share/applications/firefox.desktop
+```
+- Locate "Exec=firefox %u" and replace with
+```shell
+Exec=firefox -P kiosk_profile --private-window %u
+```
