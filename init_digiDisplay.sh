@@ -14,6 +14,4 @@ git clone https://github.com/undoLogic/digi-display.git --branch main --single-b
 # allow that the run kiosk can run as execute commands
 chmod +x runDigiDisplay.sh
 
-echo " =========== NEXT: display power settings so the screen remains active -> settings > power > power mode PERFORMANCE > dim screen UNCHECK > screen blank OFF"
-echo " =========== NEXT: disable popups: sudo nano /etc/xdg/autostart/update-notifier.desktop => NoDisplay=true"
-echo " =========== NEXT: add 'runDigiDisplay.sh' to startup applications"
+echo " =========== NEXT follow the instructions on www.digi-display.com -> source code"
