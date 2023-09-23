@@ -48,7 +48,16 @@ Auto opens the full screen display after the computer has booted
 - Next unplug and replug to ensure it is setup to auto start after a power failure (adjust in bios if doesn't auto turn on)
 
 ### Disable popups
-- Coming soon...
+- software update -> updates tab: NEVER | notify me of a new Ubuntu version: NEVER
+- Click clock: choose do not disturb
+- Settings: I also set applications to OFF
+
+### Power button for instant shutdown
+By default when you press the power button it displays a prompt, which is annoying and requires to have the remote control, so we are going to change the default behaviour of the power button to initiate instant power off
+- First set the default behaviour to nothing
+```
+gsettings set org.gnome.settings-daemon.plugins.power power-button-action 'nothing'
+```
 
 ### Prevent browser sessions
 Prevent firefox from keeping a session which will mess up the loading process for the kiosk mode
