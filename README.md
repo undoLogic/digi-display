@@ -58,6 +58,25 @@ By default when you press the power button it displays a prompt, which is annoyi
 ```
 gsettings set org.gnome.settings-daemon.plugins.power power-button-action 'nothing'
 ```
+- Next we are going to create a power interface file
+```
+nano /etc/acpi/events/power
+```
+- Paste the following code into it
+```
+#!/bin/sh
+event=button/power
+action=/usr/bin/logger "ACPI_POWER_BTTN_TEST: %e"
+action=/home/digi-display/Desktop/DigiDisplay/shutdown.sh
+```
+OPTIONAL: If you want to see if the button is actually activating you can tail the log
+```
+tail -f /var/log/syslog
+```
+Now let's restart the ACPI service
+```
+service acpid restart
+```
 
 ### Prevent browser sessions
 Prevent firefox from keeping a session which will mess up the loading process for the kiosk mode
