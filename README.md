@@ -62,6 +62,8 @@ gsettings set org.gnome.settings-daemon.plugins.power power-button-action 'nothi
 ```
 - Next we are going to create a power interface file
 ```
+# switch to root
+sudo su -
 nano /etc/acpi/events/power
 ```
 - Paste the following code into it
@@ -69,7 +71,7 @@ nano /etc/acpi/events/power
 #!/bin/sh
 event=button/power
 action=/usr/bin/logger "ACPI_POWER_BTTN_TEST: %e"
-action=/home/digi-display/Desktop/DigiDisplay/shutdown.sh
+action=/home/digi-display/Desktop/digiDisplay/shutdown.sh
 ```
 OPTIONAL: If you want to see if the button is actually activating you can tail the log
 ```
