@@ -12,7 +12,9 @@ http://get.digi-display.com
 ```angular2html
 cd ~/Downloads
 chmod +x init_digiDisplay.sh
+./init_digiDisplay.sh
 ```
+This will now install all the files to the ~/Desktop/digiDisplay
 
 ### Manual steps
 Disable power settings to keep the screen running
