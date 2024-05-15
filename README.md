@@ -115,3 +115,33 @@ Right-click on the desktop background and choose **Desktop Preferences**
 - Resolution is wrong
   - Start -> Monitor Settings
     - Set Desired Resolution
+
+
+
+
+### Remote Management
+
+#### Tailscale 
+Using TailScale you can remotely manage your digital signage box
+- Open a terminal and type
+```angular2html
+curl -fsSL https://tailscale.com/install.sh | sh
+```
+After installation you can type
+```angular2html
+sudo tailscale up
+```
+and you will get a link to copy into your browser and login to authenticate the connection with your tailscale
+
+#### VNC
+
+Install tightvnc
+```angular2html
+sudo apt update
+sudo apt install tightvncserver
+```
+Now to configure
+```angular2html
+vncserver
+```
+
