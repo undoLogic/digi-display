@@ -32,8 +32,8 @@ Open UNetbootin
 Follow the instructions how to connect to your WiFi network
 https://www.digi-display.com/Pages/faqs
 
-To prepare a new device
-- After you install the new ubuntu system
+### Installation
+- After you install the new ubuntu system. This will download the neccessary files and auto upgrade the computer to the latest security updates
 - open a browser and type:
 ```
 http://get.digi-display.com
@@ -76,7 +76,7 @@ Open LXQt Configuration Center
 
 Start menu
   - Leave
-    - Restart
+    - Reboot
 
 The computer should reboot and automatically start the screen
 

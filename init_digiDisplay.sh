@@ -4,6 +4,9 @@
 sudo apt-get update
 sudo apt-get install jq git -y
 
+# upgrade to latest security updates
+sudo apt-get upgrade
+
 cd ~/Desktop || exit # fail if it doens't exist something wrong
 rm -rf ~/Desktop/digiDisplay
 mkdir ~/Desktop/digiDisplay || return # could already exist
