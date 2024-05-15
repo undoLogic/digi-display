@@ -101,4 +101,7 @@ Right click on the desktop background and choose **Desktop Preferences**
     - Set desiered resolution
 
 
-
+### Testing & Troubleshooting
+- Ensure download speed is sufficient (Firefox -> Google -> speed test)
+  - 1 Mbps is slow and will cause lagging when loading content on the screen
+    - Change Wi-Fi card
