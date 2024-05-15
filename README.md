@@ -1,5 +1,37 @@
 # Digi-Display: Custom Digital Display Solution
 
+Our solution will allow to create a Digital Display with most computer hardware, even older outdated models. Follow the instructions 
+and after connecting to your already prepared online URL with your display you can connect to any TV / Monitor in your business and display.
+If you use our managed online solution to create the display materials www.Digi-Display.com you can change text and replace 
+images without any HTML experience. Our company also offers fully managed computers that can be shipped to your office fully prepared to 
+simply plug in and run your display.
+
+### First create a bootable USB KEY
+On windows install the program **UNetbootin** with Chocolatey.org
+```angular2html
+choco install unetbootin
+```
+Format the USB KEY
+- WIN + E
+- Right click on drive
+- Format Quick and change label
+
+Open UNetbootin
+- Choose Lubuntu LTS
+- OR if you have the ISO image on your computer choose and assign the correct USB KEY drive letter
+- Click OK to begin !
+
+### Image Created
+- After UNetbootin is complete you have a USB key that can book with your hardware
+- Insert the USB key into your machine you want to use as a Display display and turn it on
+- Press the key sequence to book from the USB (You might have to check your BIOS settings)
+- This will ERASE all data on this machine
+- After the computer is formatted and has booted into Lubuntu you can now configure with Digi-Display
+
+### Configure WiFi
+Follow the instructions how to connect to your WiFi network
+https://www.digi-display.com/Pages/faqs
+
 To prepare a new device
 - After you install the new ubuntu system
 - open a browser and type:
@@ -16,78 +48,57 @@ chmod +x init_digiDisplay.sh
 ```
 This will now install all the files to the ~/Desktop/digiDisplay
 
-### Manual steps
-Disable power settings to keep the screen running
-- Settings
-- Power
-- Power mode PERFORMANCE
-- Dim Screen UNCHECK
-- Screen Blank OFF
-
 ### Configure
 - open ~/Desktop/digiDisplay/config.json
 - url: Add the website url
 - kiosk: true will make the website full screen false will make it windowed
 
-### Configure WiFi
-Follow the instructions how to connect to your WiFi network 
-https://www.digi-display.com/Pages/faqs
-
-### START SCREEN
+### START SCREEN Manually
 - open ~/Desktop/digiDisplay
 - ./runDigiDisplay.sh (right click and choose open as program)
 
-### Setup automatic opening screen on boot
-Auto opens the full screen display after the computer has booted
-- Search on ubuntu
-- Startup Applications
-- Add
-- Name: runDigiDisplay
-- Command -> Browse -> Desktop -> DigiDisplay -> runDigiDisplay.sh -> click OPEN
-- Then click 'ADD'
-- IMPORTANT: ensure you close all windows and do a graceful reboot to ensure the changes are persistent
-- Reboot your computer and when it boots up the screen mode will automatically start up 
-- Next unplug and replug to ensure it is setup to auto start after a power failure (adjust in bios if doesn't auto turn on)
+### Manual Config
+Firefox suppress crash notification bar
+- Open Firefox and type **about:config** in the address bar
+- Search for '**resume_from_crash**' and set to **FALSE**
 
-### Disable popups
-- software update -> updates tab: NEVER | notify me of a new Ubuntu version: NEVER
-- Click clock: choose do not disturb
-- Settings: I also set applications to OFF
+Open LXQt Configuration Center
+- Session Settings
+  - Basic Settings
+    - Ask for confirmation to leave session UNCHECK
+  - Autostart
+      - upgnotifier UNCHECK
+      - XScreensaver UNCHECK 
+      - ADD 
+        - Name: DigiDisplay
+        - Command: /home/USERNAME/Desktop/digiDisplay/runDigiDisplay.sh
+        - Wait for system tray CHECK
 
-### Power button for instant shutdown
-By default when you press the power button it displays a prompt, which is annoying and requires to have the remote control, so we are going to change the default behaviour of the power button to initiate instant power off
-- First set the default behaviour to nothing
-```
-gsettings set org.gnome.settings-daemon.plugins.power power-button-action 'nothing'
-```
-- Next we are going to create a power interface file
-```
-# switch to root
-sudo su -
-nano /etc/acpi/events/power
-```
-- Paste the following code into it
-```
-#!/bin/sh
-event=button/power
-action=/usr/bin/logger "ACPI_POWER_BTTN_TEST: %e"
-action=/home/digi-display/Desktop/digiDisplay/shutdown.sh
-```
-OPTIONAL: If you want to see if the button is actually activating you can tail the log
-```
-tail -f /var/log/syslog
-```
-Now let's restart the ACPI service
-```
-service acpid restart
-```
+Start menu
+  - Leave
+    - Restart
 
-### Prevent browser sessions
-Prevent firefox from keeping a session which will mess up the loading process for the kiosk mode
-- Options -> History -> Never remember history
+The computer should reboot and automatically start the screen
 
-### Change background image
-Right click on the desktop background and choose Change Background Image
-- Top: Add Picture
-- Navigate to Home -> digiDisplay -> screen-loading-image.jpg
-- Then choose to activate
+#### Change background image
+Right click on the desktop background and choose **Desktop Preferences**
+- Tab: Background
+- Wallpaper mode: Zoom the image to fill the entire screen
+- Browser for image - ~/Desktop/digiDisplay/screen-loading-image.jpg
+- Apply - OK
+
+#### Hide Desktop Icons
+- Right click 'hide desktop icons'
+
+#### Hide bottom bar
+- right click on bottom bar
+- Configure panel
+- auto-hide
+
+#### Resolution
+- Start
+  - Monitor Settings
+    - Set desiered resolution
+
+
+
