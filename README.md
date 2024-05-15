@@ -58,9 +58,12 @@ This will now install all the files to the ~/Desktop/digiDisplay
 - ./runDigiDisplay.sh (right click and choose open as program)
 
 ### Manual Config
-Firefox suppress crash notification bar
-- Open Firefox and type **about:config** in the address bar
+
+Firefox suppress crash notification bar. 
+Open Firefox and type **about:config** in the address bar
 - Search for '**resume_from_crash**' and set to **FALSE**
+- Search for **browser.startup.page** and set to **0**
+- Search for **services.sync.prefs.sync.browser.startup.page** and set to **false**
 
 Open LXQt Configuration Center
 - Session Settings
