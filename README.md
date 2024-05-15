@@ -81,6 +81,16 @@ Start menu
   - Leave
     - Reboot
 
+#### Prevent screen from going to sleep
+Open a terminal and type in the following commands:
+```angular2html
+gsettings set org.gnome.desktop.session idle-delay 0
+systemctl mask suspend.target
+```
+- The second command will require a admin password
+
+
+
 The computer should reboot and automatically start the screen
 
 #### Change background image
