@@ -84,7 +84,7 @@ Start menu
 The computer should reboot and automatically start the screen
 
 #### Change background image
-Right click on the desktop background and choose **Desktop Preferences**
+Right-click on the desktop background and choose **Desktop Preferences**
 - Tab: Background
 - Wallpaper mode: Zoom the image to fill the entire screen
 - Browser for image - ~/Desktop/digiDisplay/screen-loading-image.jpg
