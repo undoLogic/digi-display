@@ -98,13 +98,10 @@ Right click on the desktop background and choose **Desktop Preferences**
 - Configure panel
 - auto-hide
 
-#### Resolution
-- Start
-  - Monitor Settings
-    - Set desiered resolution
-
-
 ### Testing & Troubleshooting
 - Ensure download speed is sufficient (Firefox -> Google -> speed test)
   - 1 Mbps is slow and will cause lagging when loading content on the screen
     - Make sure your USB Wi-Fi dongle is connected in USB-3 
+- Resolution is wrong
+  - Start -> Monitor Settings
+    - Set Desired Resolution
