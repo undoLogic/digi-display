@@ -104,4 +104,4 @@ Right click on the desktop background and choose **Desktop Preferences**
 ### Testing & Troubleshooting
 - Ensure download speed is sufficient (Firefox -> Google -> speed test)
   - 1 Mbps is slow and will cause lagging when loading content on the screen
-    - Change Wi-Fi card
+    - Make sure your USB Wi-Fi dongle is connected in USB-3 
