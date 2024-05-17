@@ -195,3 +195,6 @@ nohup x11vnc -usepw -forever -display :0 -auth guess &
 cat nohup.out
 ```
 This will show you any errors
+
+### SSH
+- Not implemented yet
