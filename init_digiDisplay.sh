@@ -2,7 +2,7 @@
 
 # add the required libraries
 sudo apt-get update
-sudo apt-get install jq git -y
+sudo apt-get install jq git curl net-tools -y
 
 # upgrade to latest security updates
 sudo apt-get upgrade

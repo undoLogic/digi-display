@@ -135,13 +135,63 @@ and you will get a link to copy into your browser and login to authenticate the 
 
 #### VNC
 
-Install tightvnc
+Install x11vnc
 ```angular2html
-sudo apt update
-sudo apt install tightvncserver
+sudo apt install x11vnc
 ```
-Now to configure
+Setup a password
 ```angular2html
-vncserver
+x11vnc -storepasswd
+```
+Run
+```shell
+x11vnc -usepw -forever -display :0 &
+# disown
+```
+Set as a service (not working)
+```shell
+sudo nano /etc/systemd/system/x11vnc.service
 ```
 
+Paste this
+```shell
+[Unit]
+Description=Start x11vnc at startup
+After=display-manager.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/x11vnc -usepw -forever -display :0 -auth /home/digiDisplay/.Xauthority
+ExecStop=/usr/bin/killall x11vnc
+Restart=on-failure
+User=digiDisplay
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable the service
+```shell
+sudo systemctl enable x11vnc.service
+sudo systemctl start x11vnc.service
+```
+
+Check the status
+```shell
+sudo systemctl status x11vnc.service
+```
+
+Reload service after changes
+```shell
+sudo systemctl daemon-reload
+sudo systemctl enable x11vnc.service
+sudo systemctl start x11vnc.service
+
+```
+
+Diagnose errors
+```shell
+nohup x11vnc -usepw -forever -display :0 -auth guess &
+cat nohup.out
+```
+This will show you any errors
