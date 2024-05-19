@@ -38,9 +38,9 @@ First download the [Minimal ISO image](https://nixos.org/download/#nixos-iso) fr
 Now we will use UNetbootin to choose the ISO and click OK to begin
 
 ## Format Computer with new bootable USB key
-- After UNetbootin is complete you have a USB key that can book with your hardware
+- After UNetbootin is complete you have a USB key that can boot with your hardware
 - Insert the USB key into your machine you want to use and turn it on
-- Press the key sequence to book from the USB (You might have to check your BIOS settings)
+- Press the key sequence to boot from the USB (You might have to check your BIOS settings)
 - This will ERASE all data on this machine
 - After the computer is formatted and has booted into Lubuntu OR NixOS you can now configure with Digi-Display
 
