@@ -1,11 +1,17 @@
 #!/bin/sh
 
 # ensure we have a network / internet before loading firefox (avoid not available screens)
-while [ "$(hostname -I)" = "" ]; do
+
+# nixOS did not accept -I argument
+#while [ "$(hostname -I)" = "" ]; do
+#  echo -e "\e[1A\e[KNo network (sleep...) $(date)"
+#  sleep 2
+#done
+
+while [ "$(hostname)" = "" ]; do
   echo -e "\e[1A\e[KNo network (sleep...) $(date)"
   sleep 2
 done
-
 
 # close firefox if it is running
 if pgrep firefox; then
