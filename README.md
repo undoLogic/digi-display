@@ -51,7 +51,7 @@ If you have chosen to proceed with NixOS you will need to add your NIX configura
 cd /etc/nixos
 sudo nano configuration.nix
 ```
-Then paste in this file [configuration.nix](https://github.com/undoLogic/digi-display/blob/main/config.json)
+Then paste in this file [configuration.nix](https://github.com/undoLogic/digi-display/blob/main/configuration.nix)
 Click save
 ```shell
 sudo nixos-rebuild switch
