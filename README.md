@@ -34,7 +34,7 @@ Open UNetbootin
 - Click OK to begin !
 
 ## Install with NixOS ISO
-First download the [Minimal ISO image](https://nixos.org/download/#nixos-iso) from the NixOS.org website.
+First download the [Graphical ISO image](https://nixos.org/download/#nixos-iso) from the NixOS.org website.
 Now we will use UNetbootin to choose the ISO and click OK to begin
 
 ## Format Computer with new bootable USB key
