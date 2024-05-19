@@ -6,7 +6,18 @@ If you use our managed online solution to create the display materials www.Digi-
 images without any HTML experience. Our company also offers fully managed computers that can be shipped to your office fully prepared to 
 simply plug in and run your display.
 
-### First create a bootable USB KEY
+Our solution uses the LXDE desktop environment. You can 
+either install using the Lubuntu ISO or you can use NixOS to install. 
+
+1. [Create bootable USB keys on Windows](#unetbootin-to-create-bootable-usb-keys-from-iso)
+2. [Install with Lubuntu ISO](#install-with-nixos-iso)
+3. [Install with NixOS](#install-with-nixos-iso)
+4. [Format your computer with bootable USB key](#format-computer-with-new-bootable-usb-key)
+5. [NixOS Preparation](#nixos-preparation-only)
+6. [Configure LXDE](#configure-lxde)
+
+## Unetbootin to create bootable USB keys from ISO
+
 On windows install the program **UNetbootin** with Chocolatey.org
 ```angular2html
 choco install unetbootin
@@ -16,24 +27,53 @@ Format the USB KEY
 - Right click on drive
 - Format Quick and change label
 
+## Install with Lubuntu ISO
 Open UNetbootin
 - Choose Lubuntu LTS
 - OR if you have the ISO image on your computer choose and assign the correct USB KEY drive letter
 - Click OK to begin !
 
-### Image Created
+## Install with NixOS ISO
+First download the [Minimal ISO image](https://nixos.org/download/#nixos-iso) from the NixOS.org website.
+Now we will use UNetbootin to choose the ISO and click OK to begin
+
+## Format Computer with new bootable USB key
 - After UNetbootin is complete you have a USB key that can book with your hardware
-- Insert the USB key into your machine you want to use as a Display display and turn it on
+- Insert the USB key into your machine you want to use and turn it on
 - Press the key sequence to book from the USB (You might have to check your BIOS settings)
 - This will ERASE all data on this machine
-- After the computer is formatted and has booted into Lubuntu you can now configure with Digi-Display
+- After the computer is formatted and has booted into Lubuntu OR NixOS you can now configure with Digi-Display
 
-### Configure WiFi
-Follow the instructions how to connect to your WiFi network
+
+## NixOS Preparation only
+If you have chosen to proceed with NixOS you will need to add your NIX configuration file. NixOS will allow greater control over your box in the future.
+```shell
+cd /etc/nixos
+sudo nano configuration.nix
+```
+Then paste in this file [configuration.nix](https://github.com/undoLogic/digi-display/blob/main/config.json)
+Click save
+```shell
+sudo nixos-rebuild switch
+```
+
+
+
+
+
+
+
+## Configure LXDE
+You now have LXDE installed on either Lubuntu OR NixOS, and you are now ready
+to configure to match the requirements to have the screen start automatically 
+and load the digital screen from our servers. 
+
+### Wi-Fi
+Follow the instructions how to connect to your Wi-Fi network
 https://www.digi-display.com/Pages/faqs
 
-### Installation
-- After you install the new ubuntu system. This will download the neccessary files and auto upgrade the computer to the latest security updates
+### Intergrate Display Software
+- After you install the Linux system. This will download and prepare our software on the local computer
 - open a browser and type:
 ```
 http://get.digi-display.com
@@ -48,7 +88,7 @@ chmod +x init_digiDisplay.sh
 ```
 This will now install all the files to the ~/Desktop/digiDisplay
 
-### Configure
+### Connect
 - open ~/Desktop/digiDisplay/config.json
 - url: Add the website url
 - kiosk: true will make the website full screen false will make it windowed
@@ -81,17 +121,17 @@ Start menu
   - Leave
     - Reboot
 
-#### Prevent screen from going to sleep
+The computer should reboot and automatically start the screen
+
+
+
+#### Prevent screen from going to sleep (not working yet)
 Open a terminal and type in the following commands:
 ```angular2html
 gsettings set org.gnome.desktop.session idle-delay 0
 systemctl mask suspend.target
 ```
-- The second command will require a admin password
-
-
-
-The computer should reboot and automatically start the screen
+- The second command will require an admin password
 
 #### Change background image
 Right-click on the desktop background and choose **Desktop Preferences**
@@ -115,9 +155,6 @@ Right-click on the desktop background and choose **Desktop Preferences**
 - Resolution is wrong
   - Start -> Monitor Settings
     - Set Desired Resolution
-
-
-
 
 ### Remote Management
 
@@ -153,7 +190,7 @@ Set as a service (not working)
 sudo nano /etc/systemd/system/x11vnc.service
 ```
 
-Paste this
+Paste this (not working)
 ```shell
 [Unit]
 Description=Start x11vnc at startup
@@ -188,7 +225,6 @@ sudo systemctl enable x11vnc.service
 sudo systemctl start x11vnc.service
 
 ```
-
 Diagnose errors
 ```shell
 nohup x11vnc -usepw -forever -display :0 -auth guess &
