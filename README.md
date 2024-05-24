@@ -137,6 +137,10 @@ xset -dpms
 xset s noblank
 ```
 
+####
+Disable translations, manually click the translation icon in the address bar
+and uncheck "always offer to translate"
+
 #### Change background image
 Right-click on the desktop background and choose **Desktop Preferences**
 - Tab: Background
