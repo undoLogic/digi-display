@@ -128,10 +128,14 @@ The computer should reboot and automatically start the screen
 #### Prevent screen from going to sleep (not working yet)
 Open a terminal and type in the following commands:
 ```angular2html
-gsettings set org.gnome.desktop.session idle-delay 0
-systemctl mask suspend.target
+sudo apt purge xscreensaver
 ```
-- The second command will require an admin password
+Also this was recommended but doesn't seem to work
+```shell
+xset s off
+xset -dpms
+xset s noblank
+```
 
 #### Change background image
 Right-click on the desktop background and choose **Desktop Preferences**

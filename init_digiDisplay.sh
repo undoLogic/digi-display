@@ -8,6 +8,10 @@ then
     # add the required libraries
     sudo apt-get update
     sudo apt-get install jq git curl net-tools -y
+
+    # remove screensaver so it will not blank screen at all
+    sudo apt purge xscreensaver
+
     # upgrade to latest security updates
     sudo apt-get upgrade
 
@@ -27,4 +31,5 @@ git clone https://github.com/undoLogic/digi-display.git --branch main --single-b
 # allow that the run kiosk can run as execute commands
 chmod +x runDigiDisplay.sh
 
+echo " - - - "
 echo " =========== NEXT follow the instructions on www.digi-display.com -> source code"
