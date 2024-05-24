@@ -126,6 +126,7 @@ The computer should reboot and automatically start the screen
 
 
 #### Prevent screen from going to sleep (not working yet)
+This is already included in the init_script
 Open a terminal and type in the following commands:
 ```angular2html
 sudo apt purge xscreensaver
@@ -163,6 +164,18 @@ Right-click on the desktop background and choose **Desktop Preferences**
 - Resolution is wrong
   - Start -> Monitor Settings
     - Set Desired Resolution
+
+
+### Virtual Box
+If you are testing this on virtual box, you need to install "Guest Additions CD"
+- Menu 'Devices' => "Insert Guest Additions CD Images" 
+- Open Terminal
+```shell
+cd /media/COMPUTERNAME/CDNAME/
+sudo ./VBoxLinuxAdditions.run
+```
+You will now have Copy and paste between 
+
 
 ### Remote Management
 
