@@ -201,57 +201,26 @@ Setup a password
 ```angular2html
 x11vnc -storepasswd
 ```
-Run
+Run one time
 ```shell
 x11vnc -usepw -forever -display :0 &
 # disown
 ```
-Set as a service (not working)
-```shell
-sudo nano /etc/systemd/system/x11vnc.service
-```
 
-Paste this (not working)
-```shell
-[Unit]
-Description=Start x11vnc at startup
-After=display-manager.service
 
-[Service]
-Type=simple
-ExecStart=/usr/bin/x11vnc -usepw -forever -display :0 -auth /home/digiDisplay/.Xauthority
-ExecStop=/usr/bin/killall x11vnc
-Restart=on-failure
-User=digiDisplay
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable the service
-```shell
-sudo systemctl enable x11vnc.service
-sudo systemctl start x11vnc.service
-```
-
-Check the status
-```shell
-sudo systemctl status x11vnc.service
-```
-
-Reload service after changes
-```shell
-sudo systemctl daemon-reload
-sudo systemctl enable x11vnc.service
-sudo systemctl start x11vnc.service
-
-```
-Diagnose errors
-```shell
-nohup x11vnc -usepw -forever -display :0 -auth guess &
-cat nohup.out
-```
-This will show you any errors
 
 ### SSH
 - Not implemented yet
+
+### Security
+To ensure that only SSH connections are received over Tailscale, we are going to add firewall rules. 
+This will ensure that only the tailescale0 network adapter is allowed to receive SSH and VNC traffic. 
+
+```shell
+sudo ufw enable
+sudo ufw allow in on tailscale0 to any port 22
+sudo ufw deny to any port 22
+sudo ufw allow in on tailscale0 to any port 5900
+sudo ufw deny to any port 5900
+sudo ufw status
+```

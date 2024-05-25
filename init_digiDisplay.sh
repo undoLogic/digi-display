@@ -7,7 +7,7 @@ then
     # You can add more commands here that you want to run if apt is installed
     # add the required libraries
     sudo apt-get update
-    sudo apt-get install jq git curl net-tools -y
+    sudo apt-get install jq git curl net-tools openssh-server -y
 
     # remove screensaver so it will not blank screen at all
     sudo apt purge xscreensaver
