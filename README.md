@@ -99,6 +99,8 @@ This will now install all the files to the ~/Desktop/digiDisplay
 
 ### Manual Config
 
+Change the computer name now
+
 Firefox suppress crash notification bar. 
 Open Firefox and type **about:config** in the address bar
 - Search for '**resume_from_crash**' and set to **FALSE**
