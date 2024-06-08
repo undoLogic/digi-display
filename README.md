@@ -11,7 +11,7 @@ either install using the Lubuntu ISO or you can use NixOS to install.
 
 1. [Create bootable USB keys on Windows](#unetbootin-to-create-bootable-usb-keys-from-iso)
 2. [Install with Lubuntu ISO](#install-with-nixos-iso)
-3. [Install with NixOS](#install-with-nixos-iso)
+
 4. [Format your computer with bootable USB key](#format-computer-with-new-bootable-usb-key)
 5. [NixOS Preparation](#nixos-preparation-only)
 6. [Configure LXDE](#configure-lxde)
@@ -33,10 +33,6 @@ Open UNetbootin
 - OR if you have the ISO image on your computer choose and assign the correct USB KEY drive letter
 - Click OK to begin !
 
-## Install with NixOS ISO
-First download the [Graphical ISO image](https://nixos.org/download/#nixos-iso) from the NixOS.org website.
-Now we will use UNetbootin to choose the ISO and click OK to begin
-
 ## Format Computer with new bootable USB key
 - After UNetbootin is complete you have a USB key that can boot with your hardware
 - Insert the USB key into your machine you want to use and turn it on
@@ -44,27 +40,8 @@ Now we will use UNetbootin to choose the ISO and click OK to begin
 - This will ERASE all data on this machine
 - After the computer is formatted and has booted into Lubuntu OR NixOS you can now configure with Digi-Display
 
-
-## NixOS Preparation only
-If you have chosen to proceed with NixOS you will need to add your NIX configuration file. NixOS will allow greater control over your box in the future.
-```shell
-cd /etc/nixos
-sudo nano configuration.nix
-```
-Then paste in this file [configuration.nix](https://github.com/undoLogic/digi-display/blob/main/configuration.nix)
-Click save
-```shell
-sudo nixos-rebuild switch
-```
-
-
-
-
-
-
-
 ## Configure LXDE
-You now have LXDE installed on either Lubuntu OR NixOS, and you are now ready
+You now have LXDE installed on either Lubuntu, and you are now ready
 to configure to match the requirements to have the screen start automatically 
 and load the digital screen from our servers. 
 
@@ -72,7 +49,7 @@ and load the digital screen from our servers.
 Follow the instructions how to connect to your Wi-Fi network
 https://www.digi-display.com/Pages/faqs
 
-### Intergrate Display Software
+### Integrate Display Software
 - After you install the Linux system. This will download and prepare our software on the local computer
 - open a browser and type:
 ```
@@ -127,18 +104,9 @@ The computer should reboot and automatically start the screen
 
 
 
-#### Prevent screen from going to sleep (not working yet)
-This is already included in the init_script
-Open a terminal and type in the following commands:
-```angular2html
-sudo apt purge xscreensaver
-```
-Also this was recommended but doesn't seem to work
-```shell
-xset s off
-xset -dpms
-xset s noblank
-```
+#### Prevent screen from going to sleep
+Create an autostart script in Session Settings which will ensure the screen stays on
+- Link to the file 'disable-dpms.sh'
 
 ####
 Disable translations, manually click the translation icon in the address bar
@@ -167,7 +135,6 @@ Right-click on the desktop background and choose **Desktop Preferences**
   - Start -> Monitor Settings
     - Set Desired Resolution
 
-
 ### Virtual Box
 If you are testing this on virtual box, you need to install "Guest Additions CD"
 - Menu 'Devices' => "Insert Guest Additions CD Images" 
@@ -176,8 +143,8 @@ If you are testing this on virtual box, you need to install "Guest Additions CD"
 cd /media/COMPUTERNAME/CDNAME/
 sudo ./VBoxLinuxAdditions.run
 ```
-You will now have Copy and paste between 
-
+You will now have Copy and paste between
+- ensure you also check the box in Virtual Box - Details - Settings - General - advanced - BOTH shared clipboard and drag and drop to bidirectional
 
 ### Remote Management
 
@@ -194,29 +161,29 @@ sudo tailscale up
 and you will get a link to copy into your browser and login to authenticate the connection with your tailscale
 
 #### VNC
+The program gets installed in the init_digiDisplay.sh
 
-Install x11vnc
-```angular2html
-sudo apt install x11vnc
-```
 Setup a password
 ```angular2html
 x11vnc -storepasswd
 ```
+
 Run one time
 ```shell
 x11vnc -usepw -forever -display :0 &
 # disown
 ```
 
+Auto run at computer startup
+Add a autostart script to Session options - 'vnc.sh'
 
 
 ### SSH
-- Not implemented yet
+- This gets installed with the init_digiDisplay.sh
 
 ### Security
 To ensure that only SSH connections are received over Tailscale, we are going to add firewall rules. 
-This will ensure that only the tailescale0 network adapter is allowed to receive SSH and VNC traffic. 
+This will ensure that only the tailescale0 network adapter is allowed to receive SSH and VNC traffic, and all other adapters will be blocked (eg Eth0 will NOT receive any SSH at all)
 
 ```shell
 sudo ufw enable
