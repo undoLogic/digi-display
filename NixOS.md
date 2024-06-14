@@ -17,3 +17,16 @@ Click save
 ```shell
 sudo nixos-rebuild switch
 ```
+
+
+
+
+
+Monitor
+
+BASE='/home/username/.nix-profile/bin'
+
+```shell
+nix-env -iA nixos.wmctrl nixos.xdotool
+
+```
