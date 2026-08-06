@@ -9,13 +9,25 @@ Phase 1 is intentionally simple: configure Firefox, start it in kiosk mode, keep
 Install Aurora DX, connect networking, open Terminal, and clone this public GitHub repository:
 
 ```bash
-sudo dnf install git
+ujust aurora-cli
+```
+
+Confirm Git is available, then clone the repository:
+
+```bash
+git --version
 cd ~
 git clone https://github.com/undoLogic/digi-display.git digi-display
 cd ~/digi-display
 ```
 
-Because the repository is public, GitHub authentication is not required for this step.
+`ujust aurora-cli` installs Aurora's supported command-line tooling. If `git` is still unavailable, install it into the user environment with Homebrew:
+
+```bash
+brew install git
+```
+
+Because the repository is public, GitHub authentication is not required for cloning it.
 
 From the repository root, run:
 
