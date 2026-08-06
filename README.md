@@ -32,7 +32,7 @@ Because the repository is public, GitHub authentication is not required for clon
 From the repository root, run:
 
 ```bash
-ujust digidisplay
+just digidisplay
 ```
 
 The setup asks a few questions and writes the visible local config file:
@@ -56,7 +56,7 @@ To download the latest version of the project later:
 ```bash
 cd ~/digi-display
 git pull
-ujust digidisplay
+just digidisplay
 ```
 
 The local display configuration in `~/digidisplay.json` is not stored in the repository and can be edited independently.
@@ -64,19 +64,19 @@ The local display configuration in `~/digidisplay.json` is not stored in the rep
 ## Commands
 
 ```bash
-ujust digidisplay
-ujust digidisplay-status
-ujust digidisplay-launch
-ujust digidisplay-tailscale
+just digidisplay
+just digidisplay-status
+just digidisplay-launch
+just digidisplay-tailscale
 ```
 
-`ujust digidisplay` configures the kiosk.
+`just digidisplay` configures the kiosk.
 
-`ujust digidisplay-status` shows the config, systemd user service state, and recent service logs.
+`just digidisplay-status` shows the config, systemd user service state, and recent service logs.
 
-`ujust digidisplay-launch` starts the kiosk manually for troubleshooting.
+`just digidisplay-launch` starts the kiosk manually for troubleshooting.
 
-`ujust digidisplay-tailscale` helps enable Tailscale after it is installed.
+`just digidisplay-tailscale` helps enable Tailscale after it is installed.
 
 ## Configuration
 

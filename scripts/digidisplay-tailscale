@@ -40,7 +40,7 @@ install_hint() {
   log
   log "Install Tailscale using the current upstream instructions, then rerun:"
   log
-  log "  ujust digidisplay-tailscale"
+  log "  just digidisplay-tailscale"
   log
   log "Docs: https://tailscale.com/download/linux"
 }

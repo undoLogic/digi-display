@@ -9,14 +9,14 @@ These notes describe the Phase 1 manual install path.
 - Firefox, either system-installed or Flatpak-installed
 - `python3`
 - `systemd --user`
-- `ujust` or `just`
+- `just` (included with Aurora DX)
 
 ## Install
 
 Clone the repository and run:
 
 ```bash
-ujust digidisplay
+just digidisplay
 ```
 
 The setup will:
@@ -34,7 +34,7 @@ The setup will:
 Run setup again to change kiosk options:
 
 ```bash
-ujust digidisplay
+just digidisplay
 ```
 
 Re-running setup updates the config and service file. It should not create duplicate services.
@@ -44,13 +44,13 @@ Re-running setup updates the config and service file. It should not create dupli
 For troubleshooting:
 
 ```bash
-ujust digidisplay-launch
+just digidisplay-launch
 ```
 
 ## Check Status
 
 ```bash
-ujust digidisplay-status
+just digidisplay-status
 ```
 
 This shows the active config, service state, and recent logs.
@@ -62,7 +62,7 @@ Remote access is opt-in.
 After Tailscale is installed, run:
 
 ```bash
-ujust digidisplay-tailscale
+just digidisplay-tailscale
 ```
 
 The command enables `tailscaled` and can run `sudo tailscale up`. It does not change firewall rules.

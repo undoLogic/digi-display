@@ -9,7 +9,7 @@ DigiDisplay is an open-source digital signage appliance built on Aurora DX.
 The first release should make one task simple and repeatable:
 
 ```bash
-ujust digidisplay
+just digidisplay
 ```
 
 After setup and reboot, the device should launch Firefox in kiosk mode and display a configured public URL. If no customer URL is entered, the setup should default to:
@@ -94,7 +94,7 @@ The old implementation proved several useful requirements:
 - Remote administration is important, but it should be optional and documented
 - Manual desktop setup is too fragile for repeatable deployments
 
-The new implementation should keep those behaviors while replacing manual LXDE, NixOS, and desktop-click instructions with Aurora DX and `ujust`.
+The new implementation should keep those behaviors while replacing manual LXDE, NixOS, and desktop-click instructions with Aurora DX and a local `justfile`.
 
 ## Target User
 
@@ -109,7 +109,7 @@ The expected workflow should be:
 1. Install Aurora DX on x86 hardware.
 2. Connect networking.
 3. Clone this repository.
-4. Run `ujust digidisplay`.
+4. Run `just digidisplay`.
 5. Answer a few interactive setup questions.
 6. Reboot.
 7. The screen opens directly into the configured web display.
@@ -130,7 +130,7 @@ ARM support is out of scope until Aurora DX officially supports the target ARM h
 ```text
 Hardware
   -> Aurora DX
-  -> DigiDisplay ujust recipe
+  -> DigiDisplay local just recipe
   -> System/user startup configuration
   -> Firefox kiosk profile
   -> Public website or UpdateCase display URL
@@ -210,7 +210,7 @@ Secrets should not be stored in this file.
 
 ## Setup Prompts
 
-`ujust digidisplay` should be interactive so it is easy to run directly on a new device.
+`just digidisplay` should be interactive so it is easy to run directly on a new device.
 
 The Phase 1 prompts should stay short:
 
@@ -222,12 +222,12 @@ The Phase 1 prompts should stay short:
 
 Non-interactive environment-variable support can be added later if automated fleet provisioning needs it.
 
-## ujust Command
+## Local just Commands
 
 The main command should be:
 
 ```bash
-ujust digidisplay
+just digidisplay
 ```
 
 Responsibilities:
@@ -249,12 +249,12 @@ Phase 1 should use a systemd user service as the primary launcher because it giv
 Related commands:
 
 ```bash
-ujust digidisplay
-ujust digidisplay-status
-ujust digidisplay-tailscale
+just digidisplay
+just digidisplay-status
+just digidisplay-tailscale
 ```
 
-`ujust digidisplay-tailscale` should be separate from the main setup so remote access stays opt-in.
+`just digidisplay-tailscale` should be separate from the main setup so remote access stays opt-in.
 
 ## Firefox Behavior
 
@@ -304,7 +304,7 @@ Remote access should be documented with a security-first default: no public SSH/
 Tailscale setup should be handled by a separate command:
 
 ```bash
-ujust digidisplay-tailscale
+just digidisplay-tailscale
 ```
 
 That command should install or verify Tailscale, guide the user through authentication, and avoid changing firewall rules without clearly explaining what it is doing.
@@ -375,7 +375,7 @@ Additional requirements:
 
 Phase 1 is complete when:
 
-- A fresh Aurora DX device can run `ujust digidisplay`
+- A fresh Aurora DX device can run `just digidisplay` from the cloned repository
 - The setup command prompts for the key options
 - The setup command writes a valid local config to `~/digidisplay.json`
 - The configured URL launches in Firefox kiosk mode after reboot
@@ -386,13 +386,13 @@ Phase 1 is complete when:
 - Re-running setup does not duplicate systemd user services or startup entries
 - The README documents install, configure, reboot, update, and recovery steps
 - Remote admin options are documented but disabled by default
-- Tailscale setup is available through `ujust digidisplay-tailscale`
+- Tailscale setup is available through `just digidisplay-tailscale`
 
 ## Decisions
 
 - Local configuration lives directly in the user's home directory at `~/digidisplay.json`
 - Phase 1 uses a systemd user service as the primary startup mechanism
-- `ujust digidisplay` prompts interactively
+- `just digidisplay` prompts interactively
 - Desktop autologin is offered during setup and defaults to yes
-- Tailscale setup is separate: `ujust digidisplay-tailscale`
+- Tailscale setup is separate: `just digidisplay-tailscale`
 - The starter URL is `https://www.digi-display.com/en`

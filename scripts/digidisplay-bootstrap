@@ -165,7 +165,7 @@ ensure_firefox() {
     fi
   fi
 
-  fail "Install Firefox, then run ujust digidisplay again."
+  fail "Install Firefox, then run just digidisplay again."
 }
 
 install_firefox_profile() {
@@ -289,7 +289,7 @@ main() {
   log "Config: $CONFIG_FILE"
   log "Service: $USER_SERVICE_FILE"
   log
-  log "Use 'ujust digidisplay-status' to inspect the service."
+  log "Use 'just digidisplay-status' to inspect the service."
 
   if yes_no "Reboot now?" "no"; then
     systemctl reboot
