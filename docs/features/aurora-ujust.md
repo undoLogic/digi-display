@@ -64,6 +64,7 @@ It should:
 - Create a DigiDisplay configuration file
 - Configure Firefox for unattended kiosk usage
 - Configure automatic startup after login or reboot using a systemd user service
+- Offer desktop autologin setup for appliance-style reboot behavior
 - Prevent screen blanking and display sleep
 - Launch a configured URL in Firefox kiosk mode
 - Restart the browser if it is closed
@@ -174,10 +175,10 @@ The exact structure can change during implementation, but Phase 1 should keep ru
 
 ## Configuration
 
-Phase 1 should use a local JSON config file under the installing user's home directory:
+Phase 1 should use a visible local JSON config file directly in the installing user's home directory:
 
 ```text
-~/.config/digidisplay/digidisplay.json
+~/digidisplay.json
 ```
 
 Example:
@@ -216,6 +217,7 @@ The Phase 1 prompts should stay short:
 - Display URL, defaulting to `https://www.digi-display.com/en`
 - Confirm kiosk mode, defaulting to yes
 - Confirm browser auto-restart, defaulting to yes
+- Confirm desktop autologin, defaulting to yes
 - Confirm whether to reboot now, defaulting to no
 
 Non-interactive environment-variable support can be added later if automated fleet provisioning needs it.
@@ -236,6 +238,7 @@ Responsibilities:
 - Install or verify required packages
 - Install Firefox kiosk preferences
 - Install and enable the systemd user service
+- Offer SDDM autologin configuration for the current user
 - Install branding assets
 - Provide final reboot instructions
 
@@ -374,9 +377,10 @@ Phase 1 is complete when:
 
 - A fresh Aurora DX device can run `ujust digidisplay`
 - The setup command prompts for the key options
-- The setup command writes a valid local config to `~/.config/digidisplay/digidisplay.json`
+- The setup command writes a valid local config to `~/digidisplay.json`
 - The configured URL launches in Firefox kiosk mode after reboot
 - The default URL is `https://www.digi-display.com/en` when no customer URL is entered
+- The setup offers desktop autologin so the kiosk can start after reboot without a manual login
 - The display does not sleep or blank during normal operation
 - Firefox relaunches automatically if closed
 - Re-running setup does not duplicate systemd user services or startup entries
@@ -386,8 +390,9 @@ Phase 1 is complete when:
 
 ## Decisions
 
-- Local configuration lives in the user's home directory at `~/.config/digidisplay/digidisplay.json`
+- Local configuration lives directly in the user's home directory at `~/digidisplay.json`
 - Phase 1 uses a systemd user service as the primary startup mechanism
 - `ujust digidisplay` prompts interactively
+- Desktop autologin is offered during setup and defaults to yes
 - Tailscale setup is separate: `ujust digidisplay-tailscale`
 - The starter URL is `https://www.digi-display.com/en`

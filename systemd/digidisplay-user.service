@@ -1,0 +1,17 @@
+[Unit]
+Description=DigiDisplay Firefox kiosk
+Documentation=https://www.digi-display.com/en
+After=graphical-session.target
+
+[Service]
+Type=simple
+Environment="DIGIDISPLAY_CONFIG=@CONFIG_FILE@"
+Environment="DIGIDISPLAY_REPO_DIR=@REPO_DIR@"
+ExecStart=/usr/bin/env bash "@REPO_DIR@/scripts/digidisplay-launch"
+Restart=@RESTART_POLICY@
+RestartSec=5
+TimeoutStopSec=15
+KillMode=mixed
+
+[Install]
+WantedBy=default.target

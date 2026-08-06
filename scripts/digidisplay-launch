@@ -1,0 +1,175 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+DEFAULT_URL="https://www.digi-display.com/en"
+REPO_DIR="${DIGIDISPLAY_REPO_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)}"
+CONFIG_FILE="${DIGIDISPLAY_CONFIG:-$HOME/digidisplay.json}"
+DEFAULT_PROFILE_DIR="$HOME/.local/share/digidisplay/firefox-profile"
+FLATPAK_PROFILE_DIR="$HOME/.var/app/org.mozilla.firefox/digidisplay-profile"
+PROFILE_DIR="${DIGIDISPLAY_FIREFOX_PROFILE:-$DEFAULT_PROFILE_DIR}"
+FIREFOX_PREFS_SOURCE="$REPO_DIR/config/firefox/user.js"
+
+log() {
+  printf '%s\n' "$*"
+}
+
+warn() {
+  printf 'WARNING: %s\n' "$*" >&2
+}
+
+json_value() {
+  local key="$1"
+  local fallback="$2"
+
+  if [ ! -f "$CONFIG_FILE" ]; then
+    printf '%s\n' "$fallback"
+    return
+  fi
+
+  python3 - "$CONFIG_FILE" "$key" "$fallback" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+config_path = Path(sys.argv[1])
+key = sys.argv[2]
+fallback = sys.argv[3]
+
+try:
+    data = json.loads(config_path.read_text())
+except Exception:
+    print(fallback)
+    raise SystemExit
+
+value = data.get(key, fallback)
+if value is None:
+    value = fallback
+if isinstance(value, bool):
+    print("true" if value else "false")
+else:
+    print(value)
+PY
+}
+
+firefox_command() {
+  if command -v firefox >/dev/null 2>&1; then
+    printf '%s\n' "firefox"
+    return
+  fi
+
+  if command -v flatpak >/dev/null 2>&1 && flatpak info org.mozilla.firefox >/dev/null 2>&1; then
+    printf '%s\n' "flatpak"
+    return
+  fi
+
+  return 1
+}
+
+wait_for_graphical_session() {
+  local seconds=0
+
+  while [ -z "${WAYLAND_DISPLAY:-}" ] && [ -z "${DISPLAY:-}" ]; do
+    if [ "$seconds" -ge 60 ]; then
+      warn "No graphical session was detected after 60 seconds."
+      return
+    fi
+
+    sleep 2
+    seconds=$((seconds + 2))
+  done
+}
+
+disable_display_blanking() {
+  if command -v xset >/dev/null 2>&1 && [ -n "${DISPLAY:-}" ]; then
+    xset dpms 0 0 0 || true
+    xset s off || true
+    xset -dpms || true
+    xset s noblank || true
+  fi
+}
+
+wait_for_network() {
+  local wait_enabled="$1"
+  local seconds=0
+
+  if [ "$wait_enabled" != "true" ]; then
+    return
+  fi
+
+  if command -v nm-online >/dev/null 2>&1; then
+    nm-online -q -t 60 && return
+    warn "NetworkManager did not report online within 60 seconds. Starting Firefox anyway."
+    return
+  fi
+
+  while [ "$seconds" -lt 60 ]; do
+    if [ -n "$(hostname -I 2>/dev/null || true)" ]; then
+      return
+    fi
+
+    sleep 2
+    seconds=$((seconds + 2))
+  done
+
+  warn "No network address was detected after 60 seconds. Starting Firefox anyway."
+}
+
+prepare_firefox_profile() {
+  mkdir -p "$PROFILE_DIR"
+
+  if [ -f "$FIREFOX_PREFS_SOURCE" ]; then
+    cp "$FIREFOX_PREFS_SOURCE" "$PROFILE_DIR/user.js"
+  fi
+}
+
+close_existing_firefox() {
+  if pgrep -x firefox >/dev/null 2>&1; then
+    pkill -x firefox || true
+    sleep 2
+  fi
+}
+
+main() {
+  local url
+  local kiosk
+  local wait_network
+  local command_name
+
+  url="$(json_value "url" "$DEFAULT_URL")"
+  kiosk="$(json_value "kiosk" "true")"
+  wait_network="$(json_value "wait_for_network" "true")"
+
+  wait_for_graphical_session
+  disable_display_blanking
+  wait_for_network "$wait_network"
+  prepare_firefox_profile
+  close_existing_firefox
+
+  command_name="$(firefox_command)" || {
+    warn "Firefox was not found."
+    exit 1
+  }
+
+  if [ -z "${DIGIDISPLAY_FIREFOX_PROFILE:-}" ] && [ "$command_name" = "flatpak" ]; then
+    PROFILE_DIR="$FLATPAK_PROFILE_DIR"
+    prepare_firefox_profile
+  fi
+
+  log "Launching DigiDisplay: $url"
+
+  if [ "$command_name" = "flatpak" ]; then
+    if [ "$kiosk" = "true" ]; then
+      exec flatpak run org.mozilla.firefox --no-remote --new-instance --profile "$PROFILE_DIR" --kiosk "$url"
+    fi
+
+    exec flatpak run org.mozilla.firefox --no-remote --new-instance --profile "$PROFILE_DIR" "$url"
+  fi
+
+  if [ "$kiosk" = "true" ]; then
+    exec firefox --no-remote --new-instance --profile "$PROFILE_DIR" --kiosk "$url"
+  fi
+
+  exec firefox --no-remote --new-instance --profile "$PROFILE_DIR" "$url"
+}
+
+main "$@"

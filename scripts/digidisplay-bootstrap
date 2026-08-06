@@ -1,0 +1,301 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+APP_NAME="DigiDisplay"
+DEFAULT_URL="https://www.digi-display.com/en"
+CONFIG_FILE="${DIGIDISPLAY_CONFIG:-$HOME/digidisplay.json}"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+SERVICE_TEMPLATE="$REPO_DIR/systemd/digidisplay-user.service"
+USER_SYSTEMD_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+USER_SERVICE_FILE="$USER_SYSTEMD_DIR/digidisplay.service"
+FIREFOX_PROFILE_DIR="${DIGIDISPLAY_FIREFOX_PROFILE:-$HOME/.local/share/digidisplay/firefox-profile}"
+FIREFOX_PREFS_SOURCE="$REPO_DIR/config/firefox/user.js"
+
+log() {
+  printf '%s\n' "$*"
+}
+
+warn() {
+  printf 'WARNING: %s\n' "$*" >&2
+}
+
+fail() {
+  printf 'ERROR: %s\n' "$*" >&2
+  exit 1
+}
+
+yes_no() {
+  local prompt="$1"
+  local default="${2:-yes}"
+  local suffix="[Y/n]"
+  local answer
+
+  if [ "$default" = "no" ]; then
+    suffix="[y/N]"
+  fi
+
+  while true; do
+    read -r -p "$prompt $suffix " answer
+    answer="${answer:-$default}"
+    case "${answer,,}" in
+      y|yes) return 0 ;;
+      n|no) return 1 ;;
+      *) log "Please answer yes or no." ;;
+    esac
+  done
+}
+
+prompt_value() {
+  local prompt="$1"
+  local default="$2"
+  local answer
+
+  read -r -p "$prompt [$default]: " answer
+  printf '%s\n' "${answer:-$default}"
+}
+
+json_value() {
+  local key="$1"
+  local fallback="$2"
+
+  if [ ! -f "$CONFIG_FILE" ]; then
+    printf '%s\n' "$fallback"
+    return
+  fi
+
+  python3 - "$CONFIG_FILE" "$key" "$fallback" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+config_path = Path(sys.argv[1])
+key = sys.argv[2]
+fallback = sys.argv[3]
+
+try:
+    data = json.loads(config_path.read_text())
+except Exception:
+    print(fallback)
+    raise SystemExit
+
+value = data.get(key, fallback)
+if value is None:
+    value = fallback
+if isinstance(value, bool):
+    print("true" if value else "false")
+else:
+    print(value)
+PY
+}
+
+write_config() {
+  local url="$1"
+  local kiosk="$2"
+  local restart_browser="$3"
+
+  python3 - "$CONFIG_FILE" "$url" "$kiosk" "$restart_browser" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+config_path = Path(sys.argv[1]).expanduser()
+url = sys.argv[2]
+kiosk = sys.argv[3] == "true"
+restart_browser = sys.argv[4] == "true"
+
+data = {}
+if config_path.exists():
+    try:
+        data = json.loads(config_path.read_text())
+    except Exception:
+        data = {}
+
+if not isinstance(data, dict):
+    data = {}
+
+remote_admin = {
+    "tailscale": False,
+    "ssh": False,
+    "nomachine": False,
+}
+if isinstance(data.get("remote_admin"), dict):
+    remote_admin.update(data.get("remote_admin", {}))
+
+data.update({
+    "url": url,
+    "kiosk": kiosk,
+    "wait_for_network": data.get("wait_for_network", True),
+    "restart_browser": restart_browser,
+    "remote_admin": remote_admin,
+})
+
+config_path.parent.mkdir(parents=True, exist_ok=True)
+config_path.write_text(json.dumps(data, indent=2) + "\n")
+PY
+}
+
+check_environment() {
+  if [ -r /etc/os-release ]; then
+    if ! grep -Eiq 'aurora|universal.blue|ublue' /etc/os-release; then
+      warn "This does not look like Aurora DX. Setup will continue, but testing should happen on Aurora DX."
+    fi
+  else
+    warn "Could not read /etc/os-release to verify Aurora DX."
+  fi
+
+  command -v python3 >/dev/null 2>&1 || fail "python3 is required to write $CONFIG_FILE."
+  command -v systemctl >/dev/null 2>&1 || fail "systemctl is required for the systemd user service."
+}
+
+has_firefox() {
+  command -v firefox >/dev/null 2>&1 && return 0
+  command -v flatpak >/dev/null 2>&1 && flatpak info org.mozilla.firefox >/dev/null 2>&1
+}
+
+ensure_firefox() {
+  if has_firefox; then
+    return
+  fi
+
+  warn "Firefox was not found."
+  if command -v flatpak >/dev/null 2>&1; then
+    if yes_no "Install Firefox from Flathub now?" "yes"; then
+      flatpak install -y flathub org.mozilla.firefox
+      return
+    fi
+  fi
+
+  fail "Install Firefox, then run ujust digidisplay again."
+}
+
+install_firefox_profile() {
+  mkdir -p "$FIREFOX_PROFILE_DIR"
+  cp "$FIREFOX_PREFS_SOURCE" "$FIREFOX_PROFILE_DIR/user.js"
+
+  if command -v flatpak >/dev/null 2>&1 && flatpak info org.mozilla.firefox >/dev/null 2>&1; then
+    mkdir -p "$HOME/.var/app/org.mozilla.firefox/digidisplay-profile"
+    cp "$FIREFOX_PREFS_SOURCE" "$HOME/.var/app/org.mozilla.firefox/digidisplay-profile/user.js"
+  fi
+}
+
+install_user_service() {
+  local restart_policy="always"
+  local escaped_config_file
+  local escaped_repo_dir
+
+  if [ "$1" != "true" ]; then
+    restart_policy="no"
+  fi
+
+  escaped_config_file="$(printf '%s' "$CONFIG_FILE" | sed 's/[&|]/\\&/g')"
+  escaped_repo_dir="$(printf '%s' "$REPO_DIR" | sed 's/[&|]/\\&/g')"
+
+  mkdir -p "$USER_SYSTEMD_DIR"
+  sed \
+    -e "s|@CONFIG_FILE@|$escaped_config_file|g" \
+    -e "s|@REPO_DIR@|$escaped_repo_dir|g" \
+    -e "s|@RESTART_POLICY@|$restart_policy|g" \
+    "$SERVICE_TEMPLATE" > "$USER_SERVICE_FILE"
+
+  systemctl --user daemon-reload
+  systemctl --user enable digidisplay.service
+}
+
+configure_kde_locking() {
+  if command -v kwriteconfig6 >/dev/null 2>&1; then
+    kwriteconfig6 --file kscreenlockerrc --group Daemon --key Autolock false
+    kwriteconfig6 --file kscreenlockerrc --group Daemon --key LockOnResume false
+  elif command -v kwriteconfig5 >/dev/null 2>&1; then
+    kwriteconfig5 --file kscreenlockerrc --group Daemon --key Autolock false
+    kwriteconfig5 --file kscreenlockerrc --group Daemon --key LockOnResume false
+  else
+    warn "KDE screen-lock settings were not changed because kwriteconfig was not found."
+  fi
+}
+
+configure_sddm_autologin() {
+  if ! command -v sudo >/dev/null 2>&1; then
+    warn "sudo was not found. Skipping SDDM autologin setup."
+    return
+  fi
+
+  local session="plasma.desktop"
+  if [ -f /usr/share/wayland-sessions/plasma.desktop ]; then
+    session="plasma.desktop"
+  elif [ -f /usr/share/xsessions/plasma.desktop ]; then
+    session="plasma.desktop"
+  fi
+
+  local tmp_file
+  tmp_file="$(mktemp)"
+  cat > "$tmp_file" <<EOF
+[Autologin]
+User=$USER
+Session=$session
+EOF
+
+  sudo mkdir -p /etc/sddm.conf.d
+  sudo cp "$tmp_file" /etc/sddm.conf.d/digidisplay-autologin.conf
+  rm -f "$tmp_file"
+}
+
+main() {
+  log "$APP_NAME setup"
+  log
+
+  check_environment
+  ensure_firefox
+
+  local current_url
+  local current_kiosk
+  local current_restart
+  local url
+  local kiosk="true"
+  local restart_browser="true"
+
+  current_url="$(json_value "url" "$DEFAULT_URL")"
+  current_kiosk="$(json_value "kiosk" "true")"
+  current_restart="$(json_value "restart_browser" "true")"
+
+  url="$(prompt_value "Display URL" "$current_url")"
+  case "$url" in
+    http://*|https://*) ;;
+    *) warn "The display URL does not start with http:// or https://." ;;
+  esac
+
+  if yes_no "Launch Firefox in kiosk mode?" "$([ "$current_kiosk" = "true" ] && printf yes || printf no)"; then
+    kiosk="true"
+  else
+    kiosk="false"
+  fi
+
+  if yes_no "Restart Firefox automatically if it closes?" "$([ "$current_restart" = "true" ] && printf yes || printf no)"; then
+    restart_browser="true"
+  else
+    restart_browser="false"
+  fi
+
+  write_config "$url" "$kiosk" "$restart_browser"
+  install_firefox_profile
+  install_user_service "$restart_browser"
+  configure_kde_locking
+
+  if yes_no "Enable desktop autologin for this user?" "yes"; then
+    configure_sddm_autologin
+  fi
+
+  log
+  log "Setup complete."
+  log "Config: $CONFIG_FILE"
+  log "Service: $USER_SERVICE_FILE"
+  log
+  log "Use 'ujust digidisplay-status' to inspect the service."
+
+  if yes_no "Reboot now?" "no"; then
+    systemctl reboot
+  else
+    log "Reboot when ready to start the kiosk automatically."
+  fi
+}
+
+main "$@"

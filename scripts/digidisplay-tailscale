@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+log() {
+  printf '%s\n' "$*"
+}
+
+warn() {
+  printf 'WARNING: %s\n' "$*" >&2
+}
+
+fail() {
+  printf 'ERROR: %s\n' "$*" >&2
+  exit 1
+}
+
+yes_no() {
+  local prompt="$1"
+  local default="${2:-no}"
+  local suffix="[y/N]"
+  local answer
+
+  if [ "$default" = "yes" ]; then
+    suffix="[Y/n]"
+  fi
+
+  while true; do
+    read -r -p "$prompt $suffix " answer
+    answer="${answer:-$default}"
+    case "${answer,,}" in
+      y|yes) return 0 ;;
+      n|no) return 1 ;;
+      *) log "Please answer yes or no." ;;
+    esac
+  done
+}
+
+install_hint() {
+  log "Tailscale was not found."
+  log
+  log "Install Tailscale using the current upstream instructions, then rerun:"
+  log
+  log "  ujust digidisplay-tailscale"
+  log
+  log "Docs: https://tailscale.com/download/linux"
+}
+
+main() {
+  if ! command -v tailscale >/dev/null 2>&1; then
+    install_hint
+    exit 1
+  fi
+
+  if ! command -v sudo >/dev/null 2>&1; then
+    fail "sudo is required to enable the tailscaled service."
+  fi
+
+  log "Enabling tailscaled..."
+  sudo systemctl enable --now tailscaled.service
+
+  log
+  tailscale status || true
+  log
+
+  if yes_no "Run 'sudo tailscale up' now?" "yes"; then
+    sudo tailscale up
+  fi
+
+  log
+  warn "No firewall rules were changed. Keep SSH or remote desktop access limited to trusted networks."
+}
+
+main "$@"
