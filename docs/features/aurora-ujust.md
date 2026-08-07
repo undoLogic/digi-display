@@ -238,7 +238,7 @@ Responsibilities:
 - Install or verify required packages
 - Install Firefox kiosk preferences
 - Install and enable the systemd user service
-- Offer SDDM autologin configuration for the current user
+- Offer desktop autologin configuration for the current user (sddm or plasmalogin, whichever is active)
 - Install branding assets
 - Provide final reboot instructions
 

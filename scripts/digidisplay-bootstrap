@@ -213,9 +213,19 @@ configure_kde_locking() {
   fi
 }
 
-configure_sddm_autologin() {
+detect_login_manager() {
+  local dm_unit
+  dm_unit="$(readlink -f /etc/systemd/system/display-manager.service 2>/dev/null || true)"
+  case "$dm_unit" in
+    */plasmalogin.service) printf 'plasmalogin\n' ;;
+    */sddm.service) printf 'sddm\n' ;;
+    *) printf 'unknown\n' ;;
+  esac
+}
+
+configure_autologin() {
   if ! command -v sudo >/dev/null 2>&1; then
-    warn "sudo was not found. Skipping SDDM autologin setup."
+    warn "sudo was not found. Skipping autologin setup."
     return
   fi
 
@@ -226,6 +236,19 @@ configure_sddm_autologin() {
     session="plasma.desktop"
   fi
 
+  local login_manager
+  login_manager="$(detect_login_manager)"
+
+  local conf_dir
+  case "$login_manager" in
+    plasmalogin) conf_dir="/etc/plasmalogin.conf.d" ;;
+    sddm) conf_dir="/etc/sddm.conf.d" ;;
+    *)
+      warn "Could not detect sddm or plasmalogin as the active login manager. Skipping autologin setup."
+      return
+      ;;
+  esac
+
   local tmp_file
   tmp_file="$(mktemp)"
   cat > "$tmp_file" <<EOF
@@ -234,8 +257,8 @@ User=$USER
 Session=$session
 EOF
 
-  sudo mkdir -p /etc/sddm.conf.d
-  sudo cp "$tmp_file" /etc/sddm.conf.d/digidisplay-autologin.conf
+  sudo mkdir -p "$conf_dir"
+  sudo cp "$tmp_file" "$conf_dir/digidisplay-autologin.conf"
   rm -f "$tmp_file"
 }
 
@@ -281,7 +304,7 @@ main() {
   configure_kde_locking
 
   if yes_no "Enable desktop autologin for this user?" "yes"; then
-    configure_sddm_autologin
+    configure_autologin
   fi
 
   log

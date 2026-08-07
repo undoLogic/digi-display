@@ -46,12 +46,14 @@ systemctl --user start digidisplay.service
 journalctl --user -u digidisplay.service -n 100 --no-pager
 ```
 
-## Remove SDDM Autologin
+## Remove Desktop Autologin
 
-If setup enabled desktop autologin, remove the DigiDisplay SDDM file:
+If setup enabled desktop autologin, remove the DigiDisplay drop-in file. Aurora's default login
+manager is `plasmalogin`; older images may still use `sddm`:
 
 ```bash
-sudo rm /etc/sddm.conf.d/digidisplay-autologin.conf
+sudo rm -f /etc/plasmalogin.conf.d/digidisplay-autologin.conf
+sudo rm -f /etc/sddm.conf.d/digidisplay-autologin.conf
 ```
 
 Then reboot.

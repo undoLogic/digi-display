@@ -26,7 +26,7 @@ The setup will:
 - Write `~/digidisplay.json`
 - Prepare a dedicated Firefox profile
 - Install a systemd user service
-- Offer SDDM autologin for the current user
+- Offer desktop autologin for the current user (sddm or plasmalogin, whichever is active)
 - Offer to reboot
 
 ## Re-Run Setup
