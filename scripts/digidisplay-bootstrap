@@ -215,6 +215,37 @@ configure_kde_locking() {
   fi
 }
 
+configure_kde_power_management() {
+  local kwriteconfig=""
+
+  if command -v kwriteconfig6 >/dev/null 2>&1; then
+    kwriteconfig="kwriteconfig6"
+  elif command -v kwriteconfig5 >/dev/null 2>&1; then
+    kwriteconfig="kwriteconfig5"
+  else
+    warn "KDE power-management settings were not changed because kwriteconfig was not found."
+    return
+  fi
+
+  # Plasma's own idle timers (powerdevil) run independently of xset/DPMS and
+  # will dim and blank the screen on Wayland even with disable_display_blanking
+  # in place, so every power profile needs dimming, screen-off, and suspend
+  # disabled directly.
+  local profile
+  for profile in AC Battery LowBattery; do
+    "$kwriteconfig" --file powerdevilrc --group "$profile" --key DimDisplayWhenIdle false
+    "$kwriteconfig" --file powerdevilrc --group "$profile" --key DimDisplayIdleTimeoutSec 0
+    "$kwriteconfig" --file powerdevilrc --group "$profile" --key TurnOffDisplayWhenIdle false
+    "$kwriteconfig" --file powerdevilrc --group "$profile" --key TurnOffDisplayIdleTimeoutSec 0
+    "$kwriteconfig" --file powerdevilrc --group "$profile" --key LockBeforeTurnOffDisplay false
+    "$kwriteconfig" --file powerdevilrc --group "$profile" --key AutoSuspendIdleTimeoutSec 0
+  done
+
+  if command -v systemctl >/dev/null 2>&1 && systemctl --user list-unit-files plasma-powerdevil.service >/dev/null 2>&1; then
+    systemctl --user restart plasma-powerdevil.service || warn "Could not restart plasma-powerdevil.service. Power settings will apply after next login."
+  fi
+}
+
 install_wallpaper() {
   if [ ! -f "$WALLPAPER_SOURCE" ]; then
     return
@@ -321,6 +352,7 @@ main() {
   install_firefox_profile
   install_user_service "$restart_browser"
   configure_kde_locking
+  configure_kde_power_management
   install_wallpaper
 
   if yes_no "Enable desktop autologin for this user?" "yes"; then
