@@ -19,13 +19,7 @@ systemctl --user restart digidisplay.service
 ## Stop The Kiosk
 
 ```bash
-systemctl --user stop digidisplay.service
-```
-
-If Firefox is still open:
-
-```bash
-pkill -x firefox
+just digidisplay-cancel
 ```
 
 ## Disable Automatic Startup

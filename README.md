@@ -66,6 +66,7 @@ The local display configuration in `~/digidisplay.json` is not stored in the rep
 ```bash
 just digidisplay
 just digidisplay-status
+just digidisplay-cancel
 just digidisplay-launch
 just digidisplay-tailscale
 ```
@@ -73,6 +74,8 @@ just digidisplay-tailscale
 `just digidisplay` configures the kiosk.
 
 `just digidisplay-status` shows the config, systemd user service state, and recent service logs.
+
+`just digidisplay-cancel` stops the kiosk service and closes Firefox if it is still running.
 
 `just digidisplay-launch` starts the kiosk manually for troubleshooting.
 
@@ -117,6 +120,7 @@ docs/features/aurora-ujust.md
 docs/install/aurora-dx.md
 docs/recovery/kiosk.md
 scripts/digidisplay-bootstrap
+scripts/digidisplay-cancel
 scripts/digidisplay-launch
 scripts/digidisplay-status
 scripts/digidisplay-tailscale

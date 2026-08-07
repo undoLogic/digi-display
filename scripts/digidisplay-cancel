@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+SERVICE_NAME="digidisplay.service"
+
+log() {
+  printf '%s\n' "$*"
+}
+
+warn() {
+  printf 'WARNING: %s\n' "$*" >&2
+}
+
+if command -v systemctl >/dev/null 2>&1; then
+  if systemctl --user list-unit-files "$SERVICE_NAME" >/dev/null 2>&1; then
+    systemctl --user stop "$SERVICE_NAME" || warn "Could not stop $SERVICE_NAME."
+  else
+    warn "$SERVICE_NAME was not found for this user."
+  fi
+else
+  warn "systemctl was not found."
+fi
+
+if pgrep -x firefox >/dev/null 2>&1; then
+  pkill -x firefox || warn "Could not close Firefox."
+fi
+
+log "DigiDisplay kiosk cancelled."
