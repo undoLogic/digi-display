@@ -2,4 +2,6 @@
 
 Place default DigiDisplay wallpaper assets in this directory.
 
-Phase 1 can run without a custom wallpaper, but the bootstrap script should use this directory when branding assets are added.
+`digidisplay-wallpaper.jpg` is applied automatically by `scripts/digidisplay-bootstrap` via
+`plasma-apply-wallpaperimage` during setup. Replace the file to change the branding; the bootstrap
+script does not need to change.

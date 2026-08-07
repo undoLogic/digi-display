@@ -10,6 +10,8 @@ USER_SYSTEMD_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 USER_SERVICE_FILE="$USER_SYSTEMD_DIR/digidisplay.service"
 FIREFOX_PROFILE_DIR="${DIGIDISPLAY_FIREFOX_PROFILE:-$HOME/.local/share/digidisplay/firefox-profile}"
 FIREFOX_PREFS_SOURCE="$REPO_DIR/config/firefox/user.js"
+WALLPAPER_SOURCE="$REPO_DIR/assets/wallpaper/digidisplay-wallpaper.jpg"
+WALLPAPER_DEST="$HOME/.local/share/digidisplay/wallpaper.jpg"
 
 log() {
   printf '%s\n' "$*"
@@ -213,6 +215,23 @@ configure_kde_locking() {
   fi
 }
 
+install_wallpaper() {
+  if [ ! -f "$WALLPAPER_SOURCE" ]; then
+    return
+  fi
+
+  mkdir -p "$(dirname "$WALLPAPER_DEST")"
+  cp "$WALLPAPER_SOURCE" "$WALLPAPER_DEST"
+
+  if command -v plasma-apply-wallpaperimage >/dev/null 2>&1; then
+    if ! plasma-apply-wallpaperimage --fill-mode preserveAspectCrop "$WALLPAPER_DEST" >/dev/null 2>&1; then
+      warn "Could not set the desktop wallpaper automatically. You can set it manually via System Settings."
+    fi
+  else
+    warn "plasma-apply-wallpaperimage was not found. Skipping automatic wallpaper setup."
+  fi
+}
+
 detect_login_manager() {
   local dm_unit
   dm_unit="$(readlink -f /etc/systemd/system/display-manager.service 2>/dev/null || true)"
@@ -302,6 +321,7 @@ main() {
   install_firefox_profile
   install_user_service "$restart_browser"
   configure_kde_locking
+  install_wallpaper
 
   if yes_no "Enable desktop autologin for this user?" "yes"; then
     configure_autologin
