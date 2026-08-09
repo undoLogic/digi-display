@@ -49,6 +49,26 @@ https://www.digi-display.com/en
 
 After setup, reboot the device. Firefox should open automatically in kiosk mode.
 
+## Local Runtime (Docker)
+
+Phase 2 features (local web server, local media cache, offline operation) run in Docker. Docker ships with Aurora DX; if it is not yet available, switch to Aurora DX with:
+
+```bash
+ujust devmode
+```
+
+This rebases the system to Aurora DX and reboots. After it completes, run:
+
+```bash
+ujust dx-group
+```
+
+This adds the current user to the `docker` group so Docker can run without `sudo`. Log out and back in for the group change to take effect, then confirm Docker is available:
+
+```bash
+docker --version
+```
+
 ## Update an Existing Installation
 
 To download the latest version of the project later:
