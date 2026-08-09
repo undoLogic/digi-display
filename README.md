@@ -1,8 +1,6 @@
 # DigiDisplay
 
-DigiDisplay turns an Aurora DX workstation into a browser-based digital signage appliance.
-
-Phase 1 is intentionally simple: configure Firefox, start it in kiosk mode, keep the display awake, and load one public URL.
+DigiDisplay turns an Aurora DX workstation into a browser-based digital signage appliance. It can display a remote website in cloud mode or run a Git-managed Docker Compose application locally for offline operation.
 
 ## Quick Start
 
@@ -35,13 +33,13 @@ From the repository root, run:
 just digidisplay
 ```
 
-The setup asks a few questions and writes the visible local config file:
+The setup asks whether this is a cloud or local deployment and writes the visible local config file:
 
 ```text
 ~/digidisplay.json
 ```
 
-If no display URL is entered, DigiDisplay uses:
+Cloud mode uses the following URL by default:
 
 ```text
 https://www.digi-display.com/en
@@ -51,7 +49,7 @@ After setup, reboot the device. Firefox should open automatically in kiosk mode.
 
 ## Local Runtime (Docker)
 
-Phase 2 features (local web server, local media cache, offline operation) run in Docker. Docker ships with Aurora DX; if it is not yet available, switch to Aurora DX with:
+Local mode runs a configured application repository with Docker Compose. Docker ships with Aurora DX; if it is not yet available, switch to Aurora DX with:
 
 ```bash
 ujust devmode
@@ -67,7 +65,18 @@ This adds the current user to the `docker` group so Docker can run without `sudo
 
 ```bash
 docker --version
+docker compose version
 ```
+
+Run `just digidisplay` and select `local`. Setup asks for the Git repository, branch, deployment path, Compose directory, optional SSH deploy key, health URL, and browser URL. On launch, DigiDisplay clones a missing repository, starts Compose, waits for the health URL, and then opens Firefox.
+
+Ordinary launches never fetch or pull an existing local repository. Application code changes only when an administrator runs:
+
+```bash
+just digidisplay-update
+```
+
+The update must be a clean fast-forward. It recreates containers without deleting volumes, checks application health, and restarts the kiosk.
 
 ## Update an Existing Installation
 
@@ -88,6 +97,7 @@ just digidisplay
 just digidisplay-status
 just digidisplay-cancel
 just digidisplay-launch
+just digidisplay-update
 just digidisplay-tailscale
 ```
 
@@ -98,6 +108,8 @@ just digidisplay-tailscale
 `just digidisplay-cancel` stops the kiosk service and closes Firefox if it is still running.
 
 `just digidisplay-launch` starts the kiosk manually for troubleshooting.
+
+`just digidisplay-update` explicitly updates and restarts a configured local-mode application.
 
 `just digidisplay-tailscale` helps enable Tailscale after it is installed.
 
@@ -113,6 +125,8 @@ Example:
 
 ```json
 {
+  "version": 1,
+  "mode": "cloud",
   "url": "https://www.digi-display.com/en",
   "kiosk": true,
   "wait_for_network": true,
@@ -121,15 +135,44 @@ Example:
     "tailscale": false,
     "ssh": false,
     "nomachine": false
+  },
+  "update": {
+    "automatic": false
   }
 }
 ```
 
-Edit `url` to change the screen content. Reboot or restart the user service afterward:
+Local mode adds a `local` object:
+
+```json
+{
+  "version": 1,
+  "mode": "local",
+  "url": "http://localhost",
+  "kiosk": true,
+  "wait_for_network": false,
+  "restart_browser": true,
+  "local": {
+    "repository": "git@github.com:example/private-project.git",
+    "branch": "main",
+    "project_path": "~/DigiDisplay/projects/client-project",
+    "docker_path": "docker-wsl",
+    "ssh_key": "~/.ssh/digidisplay",
+    "health_url": "http://localhost/"
+  },
+  "update": {
+    "automatic": false
+  }
+}
+```
+
+Private key contents must not be placed in this file; `ssh_key` is only a path. Edit the configuration, then reboot or restart the user service:
 
 ```bash
 systemctl --user restart digidisplay.service
 ```
+
+For SSH repositories, connect to the Git host once as the DigiDisplay user before unattended startup so its host key is present in `~/.ssh/known_hosts`.
 
 ## Files
 
@@ -144,7 +187,10 @@ scripts/digidisplay-cancel
 scripts/digidisplay-launch
 scripts/digidisplay-status
 scripts/digidisplay-tailscale
+scripts/digidisplay-update
+scripts/lib/digidisplay-local-runtime
 systemd/digidisplay-user.service
+tests/digidisplay-runtime-test
 ```
 
 ## License

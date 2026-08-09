@@ -1,0 +1,258 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+TEST_ROOT="$(mktemp -d)"
+FAKE_BIN="$TEST_ROOT/bin"
+CALL_LOG="$TEST_ROOT/calls.log"
+CONFIG_FILE="$TEST_ROOT/digidisplay.json"
+
+cleanup() {
+  rm -rf "$TEST_ROOT"
+}
+trap cleanup EXIT
+
+fail_test() {
+  printf 'FAIL: %s\n' "$*" >&2
+  exit 1
+}
+
+assert_contains() {
+  local expected="$1"
+  rg -F --quiet -- "$expected" "$CALL_LOG" || fail_test "Expected call: $expected"
+}
+
+assert_not_contains() {
+  local unexpected="$1"
+  if rg -F --quiet -- "$unexpected" "$CALL_LOG"; then
+    fail_test "Unexpected call: $unexpected"
+  fi
+}
+
+write_fake_commands() {
+  mkdir -p "$FAKE_BIN"
+
+  cat > "$FAKE_BIN/git" <<'SH'
+#!/usr/bin/env bash
+printf 'git %s\n' "$*" >> "$CALL_LOG"
+if [[ " $* " == *" branch --show-current "* ]]; then
+  printf 'main\n'
+fi
+if [[ " $* " == *" clone "* ]]; then
+  destination="${!#}"
+  mkdir -p "$destination/.git" "$destination/docker-wsl"
+fi
+SH
+
+  cat > "$FAKE_BIN/docker" <<'SH'
+#!/usr/bin/env bash
+printf 'docker %s\n' "$*" >> "$CALL_LOG"
+SH
+
+  cat > "$FAKE_BIN/curl" <<'SH'
+#!/usr/bin/env bash
+printf 'curl %s\n' "$*" >> "$CALL_LOG"
+[ "${CURL_FAIL:-false}" != "true" ]
+SH
+
+  cat > "$FAKE_BIN/firefox" <<'SH'
+#!/usr/bin/env bash
+printf 'firefox %s\n' "$*" >> "$CALL_LOG"
+SH
+
+  cat > "$FAKE_BIN/systemctl" <<'SH'
+#!/usr/bin/env bash
+printf 'systemctl %s\n' "$*" >> "$CALL_LOG"
+SH
+
+  cat > "$FAKE_BIN/kwriteconfig6" <<'SH'
+#!/usr/bin/env bash
+printf 'kwriteconfig6 %s\n' "$*" >> "$CALL_LOG"
+SH
+
+  cat > "$FAKE_BIN/plasma-apply-wallpaperimage" <<'SH'
+#!/usr/bin/env bash
+printf 'plasma-apply-wallpaperimage %s\n' "$*" >> "$CALL_LOG"
+SH
+
+  cat > "$FAKE_BIN/pgrep" <<'SH'
+#!/usr/bin/env bash
+exit 1
+SH
+
+  cat > "$FAKE_BIN/pkill" <<'SH'
+#!/usr/bin/env bash
+printf 'pkill %s\n' "$*" >> "$CALL_LOG"
+SH
+
+  chmod +x "$FAKE_BIN"/*
+}
+
+write_local_config() {
+  cat > "$CONFIG_FILE" <<JSON
+{
+  "version": 1,
+  "mode": "local",
+  "url": "http://localhost",
+  "kiosk": true,
+  "wait_for_network": false,
+  "restart_browser": true,
+  "local": {
+    "repository": "git@example.test:client/project.git",
+    "branch": "main",
+    "project_path": "$TEST_ROOT/project",
+    "docker_path": "docker-wsl",
+    "ssh_key": "",
+    "health_url": "http://localhost/health"
+  }
+}
+JSON
+}
+
+write_cloud_config() {
+  cat > "$CONFIG_FILE" <<'JSON'
+{
+  "version": 1,
+  "mode": "cloud",
+  "url": "https://display.example.test",
+  "kiosk": true,
+  "wait_for_network": false,
+  "restart_browser": true
+}
+JSON
+}
+
+run_launch() {
+  HOME="$TEST_ROOT/home" \
+  PATH="$FAKE_BIN:$PATH" \
+  DISPLAY="" \
+  WAYLAND_DISPLAY="wayland-test" \
+  CALL_LOG="$CALL_LOG" \
+  DIGIDISPLAY_CONFIG="$CONFIG_FILE" \
+  DIGIDISPLAY_REPO_DIR="$REPO_DIR" \
+  DIGIDISPLAY_HEALTH_ATTEMPTS=1 \
+    bash "$REPO_DIR/scripts/digidisplay-launch"
+}
+
+run_update() {
+  HOME="$TEST_ROOT/home" \
+  PATH="$FAKE_BIN:$PATH" \
+  CALL_LOG="$CALL_LOG" \
+  DIGIDISPLAY_CONFIG="$CONFIG_FILE" \
+  DIGIDISPLAY_REPO_DIR="$REPO_DIR" \
+  DIGIDISPLAY_HEALTH_ATTEMPTS=1 \
+    bash "$REPO_DIR/scripts/digidisplay-update"
+}
+
+set_missing_ssh_key() {
+  python3 - "$CONFIG_FILE" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1]) as config_file:
+    config = json.load(config_file)
+config["local"]["ssh_key"] = "~/.ssh/missing-digidisplay-key"
+with open(sys.argv[1], "w") as config_file:
+    json.dump(config, config_file)
+PY
+}
+
+run_local_setup() {
+  local setup_config="$TEST_ROOT/setup.json"
+  local setup_input
+
+  setup_input="local
+git@example.test:client/setup.git
+
+$TEST_ROOT/setup-project
+
+
+
+
+
+
+n
+n"
+
+  printf '%s\n' "$setup_input" | \
+    HOME="$TEST_ROOT/home" \
+    XDG_CONFIG_HOME="$TEST_ROOT/config-home" \
+    PATH="$FAKE_BIN:$PATH" \
+    CALL_LOG="$CALL_LOG" \
+    DIGIDISPLAY_CONFIG="$setup_config" \
+      bash "$REPO_DIR/scripts/digidisplay-bootstrap" >/dev/null
+
+  python3 - "$setup_config" "$TEST_ROOT/setup-project" <<'PY'
+import json
+import sys
+
+config = json.load(open(sys.argv[1]))
+assert config["version"] == 1
+assert config["mode"] == "local"
+assert config["url"] == "http://localhost"
+assert config["wait_for_network"] is False
+assert config["local"]["repository"] == "git@example.test:client/setup.git"
+assert config["local"]["branch"] == "main"
+assert config["local"]["project_path"] == sys.argv[2]
+assert config["local"]["docker_path"] == "docker-wsl"
+assert config["local"]["health_url"] == "http://localhost/"
+assert config["update"]["automatic"] is False
+PY
+}
+
+write_fake_commands
+mkdir -p "$TEST_ROOT/home"
+
+run_local_setup
+
+write_local_config
+run_launch >/dev/null
+assert_contains "git clone --branch main --single-branch -- git@example.test:client/project.git $TEST_ROOT/project"
+assert_contains "docker compose up -d --build"
+assert_contains "curl --fail --silent --output /dev/null --max-time 5 http://localhost/health"
+assert_contains "firefox --no-remote --new-instance"
+assert_contains "--kiosk http://localhost"
+
+: > "$CALL_LOG"
+run_launch >/dev/null
+assert_not_contains "git "
+assert_contains "docker compose up -d --build"
+
+: > "$CALL_LOG"
+set_missing_ssh_key
+run_launch >/dev/null
+assert_not_contains "git "
+assert_contains "docker compose up -d --build"
+
+: > "$CALL_LOG"
+write_local_config
+run_update >/dev/null
+assert_contains "systemctl --user stop digidisplay.service"
+assert_contains "git -C $TEST_ROOT/project fetch -- git@example.test:client/project.git main"
+assert_contains "git -C $TEST_ROOT/project merge --ff-only FETCH_HEAD"
+assert_contains "docker compose up -d --build --force-recreate"
+assert_contains "systemctl --user start digidisplay.service"
+
+: > "$CALL_LOG"
+write_cloud_config
+run_launch >/dev/null
+assert_not_contains "git "
+assert_not_contains "docker "
+assert_not_contains "curl "
+assert_contains "--kiosk https://display.example.test"
+
+: > "$CALL_LOG"
+write_local_config
+if CURL_FAIL=true run_launch >/dev/null 2>&1; then
+  fail_test "Local launch should fail when the health check fails."
+fi
+assert_not_contains "firefox "
+
+: > "$CALL_LOG"
+write_cloud_config
+if run_update >/dev/null 2>&1; then
+  fail_test "Cloud mode should reject digidisplay-update."
+fi
+assert_not_contains "systemctl --user stop"
+
+printf 'PASS: DigiDisplay cloud/local runtime tests\n'

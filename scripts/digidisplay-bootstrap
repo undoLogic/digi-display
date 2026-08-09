@@ -52,8 +52,28 @@ prompt_value() {
   local default="$2"
   local answer
 
-  read -r -p "$prompt [$default]: " answer
+  if [ -z "$default" ]; then
+    read -r -p "$prompt: " answer
+  else
+    read -r -p "$prompt [$default]: " answer
+  fi
   printf '%s\n' "${answer:-$default}"
+}
+
+prompt_mode() {
+  local default="$1"
+  local mode
+
+  while true; do
+    mode="$(prompt_value "Deployment mode (cloud/local)" "$default")"
+    case "${mode,,}" in
+      cloud|local)
+        printf '%s\n' "${mode,,}"
+        return
+        ;;
+      *) printf 'Please enter cloud or local.\n' >&2 ;;
+    esac
+  done
 }
 
 json_value() {
@@ -80,7 +100,12 @@ except Exception:
     print(fallback)
     raise SystemExit
 
-value = data.get(key, fallback)
+value = data
+for part in key.split("."):
+    if not isinstance(value, dict) or part not in value:
+        value = fallback
+        break
+    value = value[part]
 if value is None:
     value = fallback
 if isinstance(value, bool):
@@ -91,19 +116,34 @@ PY
 }
 
 write_config() {
-  local url="$1"
-  local kiosk="$2"
-  local restart_browser="$3"
+  local mode="$1"
+  local url="$2"
+  local kiosk="$3"
+  local restart_browser="$4"
+  local repository="$5"
+  local branch="$6"
+  local project_path="$7"
+  local docker_path="$8"
+  local ssh_key="$9"
+  local health_url="${10}"
 
-  python3 - "$CONFIG_FILE" "$url" "$kiosk" "$restart_browser" <<'PY'
+  python3 - "$CONFIG_FILE" "$mode" "$url" "$kiosk" "$restart_browser" \
+    "$repository" "$branch" "$project_path" "$docker_path" "$ssh_key" "$health_url" <<'PY'
 import json
 import sys
 from pathlib import Path
 
 config_path = Path(sys.argv[1]).expanduser()
-url = sys.argv[2]
-kiosk = sys.argv[3] == "true"
-restart_browser = sys.argv[4] == "true"
+mode = sys.argv[2]
+url = sys.argv[3]
+kiosk = sys.argv[4] == "true"
+restart_browser = sys.argv[5] == "true"
+repository = sys.argv[6]
+branch = sys.argv[7]
+project_path = sys.argv[8]
+docker_path = sys.argv[9]
+ssh_key = sys.argv[10]
+health_url = sys.argv[11]
 
 data = {}
 if config_path.exists():
@@ -115,6 +155,11 @@ if config_path.exists():
 if not isinstance(data, dict):
     data = {}
 
+previous_mode = data.get("mode", "cloud")
+wait_for_network = data.get("wait_for_network", True)
+if previous_mode != mode:
+    wait_for_network = mode == "cloud"
+
 remote_admin = {
     "tailscale": False,
     "ssh": False,
@@ -123,17 +168,44 @@ remote_admin = {
 if isinstance(data.get("remote_admin"), dict):
     remote_admin.update(data.get("remote_admin", {}))
 
+update = {"automatic": False}
+if isinstance(data.get("update"), dict):
+    update.update(data.get("update", {}))
+update["automatic"] = False
+
 data.update({
+    "version": 1,
+    "mode": mode,
     "url": url,
     "kiosk": kiosk,
-    "wait_for_network": data.get("wait_for_network", True),
+    "wait_for_network": wait_for_network,
     "restart_browser": restart_browser,
     "remote_admin": remote_admin,
+    "update": update,
 })
+
+if mode == "local":
+    data["local"] = {
+        "repository": repository,
+        "branch": branch,
+        "project_path": project_path,
+        "docker_path": docker_path,
+        "ssh_key": ssh_key,
+        "health_url": health_url,
+    }
+else:
+    data.pop("local", None)
 
 config_path.parent.mkdir(parents=True, exist_ok=True)
 config_path.write_text(json.dumps(data, indent=2) + "\n")
 PY
+}
+
+check_local_requirements() {
+  command -v git >/dev/null 2>&1 || fail "git is required for local mode."
+  command -v docker >/dev/null 2>&1 || fail "docker is required for local mode."
+  command -v curl >/dev/null 2>&1 || fail "curl is required for local mode."
+  docker compose version >/dev/null 2>&1 || fail "Docker Compose is not available."
 }
 
 check_environment() {
@@ -319,16 +391,53 @@ main() {
   check_environment
   ensure_firefox
 
+  local current_mode
   local current_url
   local current_kiosk
   local current_restart
+  local mode
   local url
   local kiosk="true"
   local restart_browser="true"
+  local repository=""
+  local branch="main"
+  local project_path="~/DigiDisplay/projects/client-project"
+  local docker_path="docker-wsl"
+  local ssh_key=""
+  local health_url="http://localhost/"
 
+  current_mode="$(json_value "mode" "cloud")"
   current_url="$(json_value "url" "$DEFAULT_URL")"
   current_kiosk="$(json_value "kiosk" "true")"
   current_restart="$(json_value "restart_browser" "true")"
+
+  mode="$(prompt_mode "$current_mode")"
+
+  if [ "$mode" != "$current_mode" ]; then
+    if [ "$mode" = "local" ]; then
+      current_url="http://localhost"
+    else
+      current_url="$DEFAULT_URL"
+    fi
+  fi
+
+  if [ "$mode" = "local" ]; then
+    repository="$(prompt_value "Git repository" "$(json_value "local.repository" "")")"
+    branch="$(prompt_value "Git branch" "$(json_value "local.branch" "$branch")")"
+    project_path="$(prompt_value "Local project path" "$(json_value "local.project_path" "$project_path")")"
+    docker_path="$(prompt_value "Docker Compose directory inside the project" "$(json_value "local.docker_path" "$docker_path")")"
+    ssh_key="$(prompt_value "SSH private key (leave blank for a public repository)" "$(json_value "local.ssh_key" "$ssh_key")")"
+    health_url="$(prompt_value "Local health URL" "$(json_value "local.health_url" "$health_url")")"
+
+    [ -n "$repository" ] || fail "A Git repository is required for local mode."
+    [ -n "$project_path" ] || fail "A local project path is required for local mode."
+    [ -n "$docker_path" ] || fail "A Docker Compose directory is required for local mode."
+    case "$health_url" in
+      http://*|https://*) ;;
+      *) fail "The local health URL must start with http:// or https://." ;;
+    esac
+    check_local_requirements
+  fi
 
   url="$(prompt_value "Display URL" "$current_url")"
   case "$url" in
@@ -348,7 +457,8 @@ main() {
     restart_browser="false"
   fi
 
-  write_config "$url" "$kiosk" "$restart_browser"
+  write_config "$mode" "$url" "$kiosk" "$restart_browser" \
+    "$repository" "$branch" "$project_path" "$docker_path" "$ssh_key" "$health_url"
   install_firefox_profile
   install_user_service "$restart_browser"
   configure_kde_locking

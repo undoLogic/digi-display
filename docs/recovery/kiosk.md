@@ -46,6 +46,14 @@ systemctl --user start digidisplay.service
 journalctl --user -u digidisplay.service -n 100 --no-pager
 ```
 
+For local mode, the same log includes repository, Docker Compose, and health-check failures. The kiosk remains closed when the local health check fails. Correct the configuration or application problem, then run:
+
+```bash
+systemctl --user restart digidisplay.service
+```
+
+`just digidisplay-update` refuses to update a repository with tracked local changes. Resolve those changes in the configured project checkout before retrying.
+
 ## Remove Desktop Autologin
 
 If setup enabled desktop autologin, remove the DigiDisplay drop-in file. Aurora's default login

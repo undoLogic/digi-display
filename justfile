@@ -15,5 +15,11 @@ digidisplay-cancel:
 digidisplay-launch:
     @bash scripts/digidisplay-launch
 
+digidisplay-update:
+    @bash scripts/digidisplay-update
+
 digidisplay-tailscale:
     @bash scripts/digidisplay-tailscale
+
+test:
+    @bash tests/digidisplay-runtime-test

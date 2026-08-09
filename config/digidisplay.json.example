@@ -1,4 +1,6 @@
 {
+  "version": 1,
+  "mode": "cloud",
   "url": "https://www.digi-display.com/en",
   "kiosk": true,
   "wait_for_network": true,
@@ -7,5 +9,8 @@
     "tailscale": false,
     "ssh": false,
     "nomachine": false
+  },
+  "update": {
+    "automatic": false
   }
 }

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the Phase 2 local/offline runtime feature before implementation begins.
+This document defines the Phase 2 local/offline runtime feature and records the implemented behavior.
 
 The goal of Phase 2 is to add a **local/offline runtime** while preserving the core DigiDisplay philosophy:
 
@@ -16,9 +16,9 @@ The goal of Phase 2 is to add a **local/offline runtime** while preserving the c
 
 ## Review Status
 
-This file is the implementation source of truth for the local Docker/offline feature.
+This file is the implementation source of truth for the local Docker/offline feature. The initial programming scope in section 18 is implemented. Branded maintenance states and the broader Definition of Done remain follow-up work.
 
-Before programming starts, review this document in-place and adjust:
+When revising the implementation, review this document in-place and adjust:
 
 - configuration names;
 - command names;
@@ -27,6 +27,16 @@ Before programming starts, review this document in-place and adjust:
 - implementation priorities.
 
 Sections 14 and 15 are intentionally kept as future work notes, not Phase 2 blockers.
+
+Implemented commands:
+
+```bash
+just digidisplay
+just digidisplay-launch
+just digidisplay-update
+just digidisplay-status
+just digidisplay-cancel
+```
 
 ---
 

@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+REPO_DIR="${DIGIDISPLAY_REPO_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)}"
+CONFIG_FILE="${DIGIDISPLAY_CONFIG:-$HOME/digidisplay.json}"
+SERVICE_NAME="digidisplay.service"
+LOCAL_RUNTIME_LIB="$REPO_DIR/scripts/lib/digidisplay-local-runtime"
+
+log() {
+  printf '%s\n' "$*"
+}
+
+warn() {
+  printf 'WARNING: %s\n' "$*" >&2
+}
+
+fail() {
+  printf 'ERROR: %s\n' "$*" >&2
+  exit 1
+}
+
+json_value() {
+  local key="$1"
+  local fallback="$2"
+
+  if [ ! -f "$CONFIG_FILE" ]; then
+    printf '%s\n' "$fallback"
+    return
+  fi
+
+  python3 - "$CONFIG_FILE" "$key" "$fallback" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+config_path = Path(sys.argv[1])
+key = sys.argv[2]
+fallback = sys.argv[3]
+
+try:
+    data = json.loads(config_path.read_text())
+except Exception:
+    print(fallback)
+    raise SystemExit
+
+value = data
+for part in key.split("."):
+    if not isinstance(value, dict) or part not in value:
+        value = fallback
+        break
+    value = value[part]
+if value is None:
+    value = fallback
+if isinstance(value, bool):
+    print("true" if value else "false")
+else:
+    print(value)
+PY
+}
+
+# shellcheck source=scripts/lib/digidisplay-local-runtime
+source "$LOCAL_RUNTIME_LIB"
+
+service_is_installed() {
+  command -v systemctl >/dev/null 2>&1 &&
+    systemctl --user cat "$SERVICE_NAME" >/dev/null 2>&1
+}
+
+close_kiosk() {
+  if service_is_installed; then
+    systemctl --user stop "$SERVICE_NAME"
+  fi
+
+  if pgrep -x firefox >/dev/null 2>&1; then
+    pkill -x firefox || warn "Could not close Firefox."
+  fi
+}
+
+restart_kiosk() {
+  if service_is_installed; then
+    systemctl --user start "$SERVICE_NAME"
+    log "DigiDisplay kiosk restarted."
+    return
+  fi
+
+  warn "$SERVICE_NAME is not installed."
+  log "The local application is ready. Run 'just digidisplay-launch' to open the kiosk."
+}
+
+update_failed() {
+  local status="$?"
+  trap - ERR
+  warn "The update failed. The kiosk has been left closed so it does not show an unhealthy application."
+  exit "$status"
+}
+
+main() {
+  local mode
+
+  mode="$(json_value "mode" "cloud")"
+  [ "$mode" = "local" ] || fail "digidisplay-update is only available when mode is local."
+
+  digidisplay_local_load_config
+  close_kiosk
+  trap update_failed ERR
+
+  update_local_repository
+  start_local_runtime --force-recreate
+  wait_for_local_health
+  restart_kiosk
+
+  trap - ERR
+  log "DigiDisplay update complete."
+}
+
+main "$@"

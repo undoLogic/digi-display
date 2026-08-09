@@ -1,6 +1,6 @@
 # Aurora DX Install Notes
 
-These notes describe the Phase 1 manual install path.
+These notes describe the manual cloud and local-mode install path.
 
 ## Requirements
 
@@ -10,6 +10,7 @@ These notes describe the Phase 1 manual install path.
 - `python3`
 - `systemd --user`
 - `just` (included with Aurora DX)
+- Local mode only: `git`, `curl`, Docker, and Docker Compose
 
 ## Install
 
@@ -22,7 +23,8 @@ just digidisplay
 The setup will:
 
 - Check the current operating system
-- Ask for the display URL
+- Ask for cloud or local deployment mode
+- Ask for the display URL and local Git/Docker settings when applicable
 - Write `~/digidisplay.json`
 - Prepare a dedicated Firefox profile
 - Install a systemd user service
@@ -46,6 +48,16 @@ For troubleshooting:
 ```bash
 just digidisplay-launch
 ```
+
+In local mode, the first launch clones the configured application if it is missing. Later launches use the existing checkout without pulling changes.
+
+## Update A Local Application
+
+```bash
+just digidisplay-update
+```
+
+This is the only DigiDisplay command that fetches application code. It requires a clean checkout, performs a fast-forward update, recreates containers without deleting volumes, verifies the health URL, and restarts the kiosk.
 
 ## Check Status
 
