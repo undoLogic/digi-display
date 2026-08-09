@@ -1,8 +1,8 @@
-# DigiDisplay — Phase 2 Planning Notes
+# DigiDisplay — Local Docker Offline Mode
 
 ## Purpose
 
-This document captures the newer architectural and workflow decisions discussed after the initial DigiDisplay kiosk prototype was started.
+This document defines the Phase 2 local/offline runtime feature before implementation begins.
 
 The goal of Phase 2 is to add a **local/offline runtime** while preserving the core DigiDisplay philosophy:
 
@@ -11,6 +11,22 @@ The goal of Phase 2 is to add a **local/offline runtime** while preserving the c
 - Nothing should change automatically unless DigiDisplay is explicitly updated.
 - Content updates and system/application updates are intentionally separate concerns.
 - The device should continue to behave like an appliance, not like a general-purpose desktop.
+
+---
+
+## Review Status
+
+This file is the implementation source of truth for the local Docker/offline feature.
+
+Before programming starts, review this document in-place and adjust:
+
+- configuration names;
+- command names;
+- setup/update flow;
+- failure behavior;
+- implementation priorities.
+
+Sections 14 and 15 are intentionally kept as future work notes, not Phase 2 blockers.
 
 ---
 
@@ -23,7 +39,7 @@ Hardware
   ↓
 Aurora DX
   ↓
-DigiDisplay configuration / ujust recipes
+DigiDisplay configuration / just recipes
   ↓
 Firefox kiosk
   ↓
@@ -52,16 +68,26 @@ Firefox should not need to know whether the content is remote or local. It simpl
 
 Add a deployment mode in the DigiDisplay configuration.
 
+The current DigiDisplay config is JSON at:
+
+```text
+~/digidisplay.json
+```
+
 Example concept:
 
-```yaml
-mode: cloud
+```json
+{
+  "mode": "cloud"
+}
 ```
 
 or:
 
-```yaml
-mode: local
+```json
+{
+  "mode": "local"
+}
 ```
 
 ## Cloud mode
@@ -70,9 +96,11 @@ Cloud mode remains the simplest configuration.
 
 Example:
 
-```yaml
-mode: cloud
-url: https://display.example.com
+```json
+{
+  "mode": "cloud",
+  "url": "https://display.example.com"
+}
 ```
 
 Firefox kiosk launches the configured remote URL.
@@ -85,12 +113,19 @@ Local mode runs a complete local application stack.
 
 Example concept:
 
-```yaml
-mode: local
-url: http://localhost
-repository: git@github.com:example/private-project.git
-docker_path: docker-wsl
-ssh_key: ~/.ssh/digidisplay
+```json
+{
+  "mode": "local",
+  "url": "http://localhost",
+  "local": {
+    "repository": "git@github.com:example/private-project.git",
+    "branch": "main",
+    "project_path": "~/DigiDisplay/projects/client-project",
+    "docker_path": "docker-wsl",
+    "ssh_key": "~/.ssh/digidisplay",
+    "health_url": "http://localhost/"
+  }
+}
 ```
 
 The exact schema can evolve, but the configuration must contain enough information to:
@@ -153,8 +188,10 @@ The configuration should only reference the key path.
 
 Example:
 
-```yaml
-ssh_key: ~/.ssh/digidisplay
+```json
+{
+  "ssh_key": "~/.ssh/digidisplay"
+}
 ```
 
 If a private GitHub repository is used, prefer a dedicated deploy key rather than a developer's general-purpose personal SSH key.
@@ -171,8 +208,10 @@ Instead, make the path configurable.
 
 Example:
 
-```yaml
-docker_path: docker-wsl
+```json
+{
+  "docker_path": "docker-wsl"
+}
 ```
 
 Even if the directory is historically named `docker-wsl`, DigiDisplay should treat it only as a filesystem path.
@@ -223,7 +262,7 @@ Triggered explicitly by an administrator.
 Example:
 
 ```bash
-ujust digidisplay-update
+just digidisplay-update
 ```
 
 This may change:
@@ -246,7 +285,7 @@ Conceptual sequence:
 ```text
 Administrator runs:
 
-ujust digidisplay-update
+just digidisplay-update
 
         ↓
 
@@ -404,10 +443,10 @@ This should be implemented through a reusable helper/recipe rather than hardcodi
 Possible conceptual command:
 
 ```bash
-ujust digidisplay-status updating
-ujust digidisplay-status starting
-ujust digidisplay-status error
-ujust digidisplay-status ready
+just digidisplay-wallpaper updating
+just digidisplay-wallpaper starting
+just digidisplay-wallpaper error
+just digidisplay-wallpaper ready
 ```
 
 The implementation should use KDE-native mechanisms appropriate for Aurora/KDE.
@@ -496,7 +535,7 @@ Therefore, DigiDisplay should eventually include hardware diagnostics rather tha
 Possible future command:
 
 ```bash
-ujust digidisplay-doctor
+just digidisplay-doctor
 ```
 
 Potential checks:
@@ -596,48 +635,50 @@ The design goal remains:
 
 # 17. Suggested Configuration Shape
 
-This is only a starting concept. Codex may refine naming/structure while preserving the separation of concerns.
+This is the proposed first implementation shape for `~/digidisplay.json`.
 
-```yaml
-version: 1
-
-mode: local
-
-browser:
-  url: http://localhost
-  kiosk: true
-
-local:
-  repository: git@github.com:example/private-project.git
-  branch: main
-  ssh_key: ~/.ssh/digidisplay
-  project_path: ~/DigiDisplay/projects/client-project
-  docker_path: docker-wsl
-  health_url: http://localhost/
-
-update:
-  automatic: false
-
-branding:
-  wallpaper_ready: assets/status/ready.png
-  wallpaper_updating: assets/status/updating.png
-  wallpaper_starting: assets/status/starting.png
-  wallpaper_error: assets/status/error.png
+```json
+{
+  "version": 1,
+  "mode": "local",
+  "url": "http://localhost",
+  "kiosk": true,
+  "wait_for_network": false,
+  "restart_browser": true,
+  "local": {
+    "repository": "git@github.com:example/private-project.git",
+    "branch": "main",
+    "ssh_key": "~/.ssh/digidisplay",
+    "project_path": "~/DigiDisplay/projects/client-project",
+    "docker_path": "docker-wsl",
+    "health_url": "http://localhost/"
+  },
+  "update": {
+    "automatic": false
+  },
+  "branding": {
+    "wallpaper_ready": "assets/status/ready.png",
+    "wallpaper_updating": "assets/status/updating.png",
+    "wallpaper_starting": "assets/status/starting.png",
+    "wallpaper_error": "assets/status/error.png"
+  }
+}
 ```
 
 Cloud example:
 
-```yaml
-version: 1
-
-mode: cloud
-
-browser:
-  url: https://display.example.com
-  kiosk: true
-
-update:
-  automatic: false
+```json
+{
+  "version": 1,
+  "mode": "cloud",
+  "url": "https://display.example.com",
+  "kiosk": true,
+  "wait_for_network": true,
+  "restart_browser": true,
+  "update": {
+    "automatic": false
+  }
+}
 ```
 
 ---
@@ -662,6 +703,27 @@ Recommended order:
 12. Later add `digidisplay-doctor`.
 
 Do not build all future functionality at once.
+
+## Phase 2 Initial Programming Scope
+
+The first implementation should be limited to:
+
+1. Update setup/config handling for `mode`.
+2. Support local mode fields under `local`.
+3. Clone the configured repository if missing.
+4. Update the repository only when `just digidisplay-update` is run.
+5. Start the configured Docker Compose runtime.
+6. Wait for `local.health_url`.
+7. Launch Firefox at the configured local URL.
+8. Keep cloud mode working exactly as it does today.
+
+The first implementation should not:
+
+- automatically pull application code on boot;
+- delete Docker volumes;
+- force display resolutions;
+- implement the future on-screen keyboard work;
+- require VM automation before the basic local workflow exists.
 
 ---
 
@@ -707,7 +769,7 @@ DigiDisplay continues functioning
 And an administrator can later run:
 
 ```bash
-ujust digidisplay-update
+just digidisplay-update
 ```
 
 which:
