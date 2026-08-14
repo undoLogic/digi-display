@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Fixes RDP (KRDP) login failing right after credentials are entered.
+# Root cause: /usr/lib/systemd/user/app-org.kde.krdpserver.service ships
+# NoNewPrivileges=true, which blocks the SELinux domain transition to
+# chkpwd_t that PAM needs for unix_chkpwd, so password auth always fails.
+# This installs a drop-in override (in /etc, since /usr is read-only on
+# this ostree-based image) that disables NoNewPrivileges for the service.
+set -euo pipefail
+
+D=/etc/systemd/user/app-org.kde.krdpserver.service.d
+
+sudo mkdir -p "$D"
+printf '[Service]\nNoNewPrivileges=false\n' | sudo tee "$D/override.conf" >/dev/null
+systemctl --user daemon-reload
+systemctl --user restart app-org.kde.krdpserver.service
+
+echo "Done. Current override:"
+cat "$D/override.conf"

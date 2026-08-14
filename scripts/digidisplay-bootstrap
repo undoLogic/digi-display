@@ -510,6 +510,10 @@ main() {
     configure_autologin
   fi
 
+  if yes_no "Activate RDP (apply SELinux fix for KRDP login)?" "no"; then
+    bash "$REPO_DIR/scripts/digidisplay-activate-rdp"
+  fi
+
   log
   log "Setup complete."
   log "Config: $CONFIG_FILE"

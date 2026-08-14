@@ -21,5 +21,8 @@ digidisplay-update:
 digidisplay-tailscale:
     @bash scripts/digidisplay-tailscale
 
+digidisplay-activate-rdp:
+    @bash scripts/digidisplay-activate-rdp
+
 test:
     @bash tests/digidisplay-runtime-test

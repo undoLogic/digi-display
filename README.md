@@ -99,6 +99,7 @@ just digidisplay-cancel
 just digidisplay-launch
 just digidisplay-update
 just digidisplay-tailscale
+just digidisplay-activate-rdp
 ```
 
 `just digidisplay` configures the kiosk.
@@ -112,6 +113,8 @@ just digidisplay-tailscale
 `just digidisplay-update` explicitly updates and restarts a configured local-mode application.
 
 `just digidisplay-tailscale` helps enable Tailscale after it is installed.
+
+`just digidisplay-activate-rdp` fixes KRDP login failing right after credentials are entered, caused by an SELinux/`NoNewPrivileges` conflict on ostree-based images. This is also offered as a setup question during `just digidisplay`.
 
 ## Configuration
 
@@ -185,6 +188,7 @@ config/firefox/user.js
 docs/features/aurora-ujust.md
 docs/install/aurora-dx.md
 docs/recovery/kiosk.md
+scripts/digidisplay-activate-rdp
 scripts/digidisplay-bootstrap
 scripts/digidisplay-cancel
 scripts/digidisplay-launch
