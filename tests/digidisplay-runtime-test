@@ -171,8 +171,10 @@ PY
 
 run_local_setup() {
   local setup_config="$TEST_ROOT/setup.json"
+  local plasma_keyboard_desktop="$TEST_ROOT/org.kde.plasma.keyboard.desktop"
   local setup_input
 
+  : > "$plasma_keyboard_desktop"
   setup_input="local
 git@example.test:client/setup.git
 
@@ -183,6 +185,7 @@ $TEST_ROOT/setup-project
 
 
 
+y
 n
 n"
 
@@ -192,6 +195,7 @@ n"
     PATH="$FAKE_BIN:$PATH" \
     CALL_LOG="$CALL_LOG" \
     DIGIDISPLAY_CONFIG="$setup_config" \
+    DIGIDISPLAY_PLASMA_KEYBOARD_DESKTOP="$plasma_keyboard_desktop" \
       bash "$REPO_DIR/scripts/digidisplay-bootstrap" >/dev/null
 
   python3 - "$setup_config" "$TEST_ROOT/setup-project" <<'PY'
@@ -208,6 +212,7 @@ assert config["local"]["branch"] == "main"
 assert config["local"]["project_path"] == sys.argv[2]
 assert config["local"]["docker_path"] == "docker-wsl"
 assert config["local"]["health_url"] == "http://localhost/"
+assert config["virtual_keyboard"]["always_show"] is True
 assert config["update"]["automatic"] is False
 PY
 }
@@ -220,6 +225,8 @@ for profile in AC Battery LowBattery; do
   assert_contains "kwriteconfig6 --file powerdevilrc --group $profile --group Display --key DimDisplayWhenIdle false"
   assert_contains "kwriteconfig6 --file powerdevilrc --group $profile --group Display --key TurnOffDisplayWhenIdle false"
 done
+assert_contains "kwriteconfig6 --file kwinrc --group Wayland --key InputMethod $TEST_ROOT/org.kde.plasma.keyboard.desktop"
+assert_contains "kwriteconfig6 --file kwinrc --group Wayland --key VirtualKeyboardMode 2"
 
 write_local_config
 run_launch >/dev/null

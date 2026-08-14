@@ -57,6 +57,7 @@ if [ -f "$CONFIG_FILE" ]; then
   log "URL: $(json_value "url" "not configured")"
   log "Kiosk: $(json_value "kiosk" "true")"
   log "Restart browser: $(json_value "restart_browser" "true")"
+  log "Always show virtual keyboard: $(json_value "virtual_keyboard.always_show" "false")"
   if [ "$mode" = "local" ]; then
     log "Repository: $(json_value "local.repository" "not configured")"
     log "Branch: $(json_value "local.branch" "main")"

@@ -5,6 +5,9 @@
   "kiosk": true,
   "wait_for_network": true,
   "restart_browser": true,
+  "virtual_keyboard": {
+    "always_show": false
+  },
   "remote_admin": {
     "tailscale": false,
     "ssh": false,

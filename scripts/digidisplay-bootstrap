@@ -12,6 +12,7 @@ FIREFOX_PROFILE_DIR="${DIGIDISPLAY_FIREFOX_PROFILE:-$HOME/.local/share/digidispl
 FIREFOX_PREFS_SOURCE="$REPO_DIR/config/firefox/user.js"
 WALLPAPER_SOURCE="$REPO_DIR/assets/wallpaper/digidisplay-wallpaper.jpg"
 WALLPAPER_DEST="$HOME/.local/share/digidisplay/wallpaper.jpg"
+PLASMA_KEYBOARD_DESKTOP="${DIGIDISPLAY_PLASMA_KEYBOARD_DESKTOP:-/usr/share/applications/org.kde.plasma.keyboard.desktop}"
 
 log() {
   printf '%s\n' "$*"
@@ -126,9 +127,11 @@ write_config() {
   local docker_path="$8"
   local ssh_key="$9"
   local health_url="${10}"
+  local virtual_keyboard_always_show="${11}"
 
   python3 - "$CONFIG_FILE" "$mode" "$url" "$kiosk" "$restart_browser" \
-    "$repository" "$branch" "$project_path" "$docker_path" "$ssh_key" "$health_url" <<'PY'
+    "$repository" "$branch" "$project_path" "$docker_path" "$ssh_key" "$health_url" \
+    "$virtual_keyboard_always_show" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -144,6 +147,7 @@ project_path = sys.argv[8]
 docker_path = sys.argv[9]
 ssh_key = sys.argv[10]
 health_url = sys.argv[11]
+virtual_keyboard_always_show = sys.argv[12] == "true"
 
 data = {}
 if config_path.exists():
@@ -180,6 +184,9 @@ data.update({
     "kiosk": kiosk,
     "wait_for_network": wait_for_network,
     "restart_browser": restart_browser,
+    "virtual_keyboard": {
+        "always_show": virtual_keyboard_always_show,
+    },
     "remote_admin": remote_admin,
     "update": update,
 })
@@ -318,6 +325,29 @@ configure_kde_power_management() {
   fi
 }
 
+configure_kde_virtual_keyboard() {
+  local always_show="$1"
+  local visibility_mode="1"
+
+  if ! command -v kwriteconfig6 >/dev/null 2>&1; then
+    warn "Plasma virtual-keyboard settings were not changed because kwriteconfig6 was not found."
+    return
+  fi
+
+  if [ "$always_show" = "true" ]; then
+    if [ ! -f "$PLASMA_KEYBOARD_DESKTOP" ]; then
+      warn "Plasma Keyboard was not found. Update Aurora or install plasma-keyboard to enable it."
+      return
+    fi
+    visibility_mode="2"
+    kwriteconfig6 --file kwinrc --group Wayland --key InputMethod "$PLASMA_KEYBOARD_DESKTOP"
+  fi
+
+  # 1 shows the keyboard for touch/tablet input; 2 also shows it when a
+  # text field is selected with a mouse or other input device.
+  kwriteconfig6 --file kwinrc --group Wayland --key VirtualKeyboardMode "$visibility_mode"
+}
+
 install_wallpaper() {
   if [ ! -f "$WALLPAPER_SOURCE" ]; then
     return
@@ -395,10 +425,12 @@ main() {
   local current_url
   local current_kiosk
   local current_restart
+  local current_virtual_keyboard
   local mode
   local url
   local kiosk="true"
   local restart_browser="true"
+  local virtual_keyboard_always_show="false"
   local repository=""
   local branch="main"
   local project_path="~/DigiDisplay/projects/client-project"
@@ -410,6 +442,7 @@ main() {
   current_url="$(json_value "url" "$DEFAULT_URL")"
   current_kiosk="$(json_value "kiosk" "true")"
   current_restart="$(json_value "restart_browser" "true")"
+  current_virtual_keyboard="$(json_value "virtual_keyboard.always_show" "false")"
 
   mode="$(prompt_mode "$current_mode")"
 
@@ -457,12 +490,20 @@ main() {
     restart_browser="false"
   fi
 
+  if yes_no "Always show the on-screen keyboard when a text field is selected?" "$([ "$current_virtual_keyboard" = "true" ] && printf yes || printf no)"; then
+    virtual_keyboard_always_show="true"
+  else
+    virtual_keyboard_always_show="false"
+  fi
+
   write_config "$mode" "$url" "$kiosk" "$restart_browser" \
-    "$repository" "$branch" "$project_path" "$docker_path" "$ssh_key" "$health_url"
+    "$repository" "$branch" "$project_path" "$docker_path" "$ssh_key" "$health_url" \
+    "$virtual_keyboard_always_show"
   install_firefox_profile
   install_user_service "$restart_browser"
   configure_kde_locking
   configure_kde_power_management
+  configure_kde_virtual_keyboard "$virtual_keyboard_always_show"
   install_wallpaper
 
   if yes_no "Enable desktop autologin for this user?" "yes"; then

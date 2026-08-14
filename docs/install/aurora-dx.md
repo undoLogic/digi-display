@@ -25,6 +25,7 @@ The setup will:
 - Check the current operating system
 - Ask for cloud or local deployment mode
 - Ask for the display URL and local Git/Docker settings when applicable
+- Ask whether the on-screen keyboard should appear for every selected text field
 - Write `~/digidisplay.json`
 - Prepare a dedicated Firefox profile
 - Install a systemd user service

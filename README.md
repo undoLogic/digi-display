@@ -131,6 +131,9 @@ Example:
   "kiosk": true,
   "wait_for_network": true,
   "restart_browser": true,
+  "virtual_keyboard": {
+    "always_show": false
+  },
   "remote_admin": {
     "tailscale": false,
     "ssh": false,
@@ -210,3 +213,5 @@ The virtual keyboard is not working
 - System Settings → Keyboard → Virtual Keyboard
 - Select Plasma Keyboard. > Top right > Set Show Virtual Keyboard to With Touch, Tablet, and Mouse.
 - Click Apply.
+
+You can also rerun `just digidisplay` and enable the on-screen keyboard when prompted.
