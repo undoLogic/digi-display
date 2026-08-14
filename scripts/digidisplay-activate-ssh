@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Enables the OpenSSH server so this device can be reached for remote
+# maintenance, e.g. `ssh user@host` from another machine on the network.
+set -euo pipefail
+
+sudo systemctl enable --now sshd.service
+
+echo "Done. SSH server status:"
+systemctl is-active sshd.service
+
+ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
+if [ -n "$ip" ]; then
+  echo "Connect with: ssh $USER@$ip"
+fi

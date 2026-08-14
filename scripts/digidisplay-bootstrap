@@ -149,10 +149,11 @@ write_config() {
   local health_url="${10}"
   local virtual_keyboard_always_show="${11}"
   local hostname="${12}"
+  local ssh_server_enabled="${13}"
 
   python3 - "$CONFIG_FILE" "$mode" "$url" "$kiosk" "$restart_browser" \
     "$repository" "$branch" "$project_path" "$docker_path" "$ssh_key" "$health_url" \
-    "$virtual_keyboard_always_show" "$hostname" <<'PY'
+    "$virtual_keyboard_always_show" "$hostname" "$ssh_server_enabled" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -170,6 +171,7 @@ ssh_key = sys.argv[10]
 health_url = sys.argv[11]
 virtual_keyboard_always_show = sys.argv[12] == "true"
 hostname = sys.argv[13]
+ssh_server_enabled = sys.argv[14] == "true"
 
 data = {}
 if config_path.exists():
@@ -193,6 +195,7 @@ remote_admin = {
 }
 if isinstance(data.get("remote_admin"), dict):
     remote_admin.update(data.get("remote_admin", {}))
+remote_admin["ssh"] = ssh_server_enabled
 
 update = {"automatic": False}
 if isinstance(data.get("update"), dict):
@@ -472,9 +475,11 @@ main() {
   local current_restart
   local current_virtual_keyboard
   local current_hostname
+  local current_ssh_server
   local mode
   local url
   local hostname
+  local ssh_server_enabled="false"
   local kiosk="true"
   local restart_browser="true"
   local virtual_keyboard_always_show="false"
@@ -491,6 +496,7 @@ main() {
   current_restart="$(json_value "restart_browser" "true")"
   current_virtual_keyboard="$(json_value "virtual_keyboard.always_show" "false")"
   current_hostname="$(json_value "hostname" "$(hostname)")"
+  current_ssh_server="$(json_value "remote_admin.ssh" "false")"
 
   hostname="$(prompt_hostname "$current_hostname")"
 
@@ -546,10 +552,21 @@ main() {
     virtual_keyboard_always_show="false"
   fi
 
+  if yes_no "Enable SSH server for remote maintenance access?" "$([ "$current_ssh_server" = "true" ] && printf yes || printf no)"; then
+    ssh_server_enabled="true"
+  else
+    ssh_server_enabled="false"
+  fi
+
   write_config "$mode" "$url" "$kiosk" "$restart_browser" \
     "$repository" "$branch" "$project_path" "$docker_path" "$ssh_key" "$health_url" \
-    "$virtual_keyboard_always_show" "$hostname"
+    "$virtual_keyboard_always_show" "$hostname" "$ssh_server_enabled"
   configure_hostname "$hostname"
+
+  if [ "$ssh_server_enabled" = "true" ]; then
+    bash "$REPO_DIR/scripts/digidisplay-activate-ssh"
+    warn "SSH is enabled for this device. Keep it limited to trusted networks."
+  fi
   install_firefox_profile
   install_user_service "$restart_browser"
   configure_kde_locking

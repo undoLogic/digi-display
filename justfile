@@ -24,5 +24,8 @@ digidisplay-tailscale:
 digidisplay-activate-rdp:
     @bash scripts/digidisplay-activate-rdp
 
+digidisplay-activate-ssh:
+    @bash scripts/digidisplay-activate-ssh
+
 test:
     @bash tests/digidisplay-runtime-test

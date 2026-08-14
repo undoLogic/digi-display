@@ -100,6 +100,7 @@ just digidisplay-launch
 just digidisplay-update
 just digidisplay-tailscale
 just digidisplay-activate-rdp
+just digidisplay-activate-ssh
 ```
 
 `just digidisplay` configures the kiosk.
@@ -115,6 +116,8 @@ just digidisplay-activate-rdp
 `just digidisplay-tailscale` helps enable Tailscale after it is installed.
 
 `just digidisplay-activate-rdp` fixes KRDP login failing right after credentials are entered, caused by an SELinux/`NoNewPrivileges` conflict on ostree-based images. This is also offered as a setup question during `just digidisplay`.
+
+`just digidisplay-activate-ssh` enables and starts `sshd.service` for remote maintenance access (`ssh user@host`). This is also offered as a setup question during `just digidisplay`, and the choice is recorded in `remote_admin.ssh`.
 
 `just digidisplay` also asks for a hostname, applied via `hostnamectl` so the device is identifiable on the network.
 
@@ -192,6 +195,7 @@ docs/features/aurora-ujust.md
 docs/install/aurora-dx.md
 docs/recovery/kiosk.md
 scripts/digidisplay-activate-rdp
+scripts/digidisplay-activate-ssh
 scripts/digidisplay-bootstrap
 scripts/digidisplay-cancel
 scripts/digidisplay-launch
