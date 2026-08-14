@@ -96,6 +96,7 @@ The local display configuration in `~/digidisplay.json` is not stored in the rep
 just digidisplay
 just digidisplay-status
 just digidisplay-cancel
+just digidisplay-run
 just digidisplay-launch
 just digidisplay-update
 just digidisplay-tailscale
@@ -109,7 +110,9 @@ just digidisplay-activate-ssh
 
 `just digidisplay-cancel` stops the kiosk service and closes Firefox if it is still running.
 
-`just digidisplay-launch` starts the kiosk manually for troubleshooting.
+`just digidisplay-run` starts the kiosk service (the opposite of `digidisplay-cancel`). Meant to be run over SSH: it starts `digidisplay.service` via `systemctl --user`, so Firefox opens on the physical display, not the SSH session.
+
+`just digidisplay-launch` starts the kiosk manually in the foreground for troubleshooting.
 
 `just digidisplay-update` explicitly updates and restarts a configured local-mode application.
 
@@ -199,6 +202,7 @@ scripts/digidisplay-activate-ssh
 scripts/digidisplay-bootstrap
 scripts/digidisplay-cancel
 scripts/digidisplay-launch
+scripts/digidisplay-run
 scripts/digidisplay-status
 scripts/digidisplay-tailscale
 scripts/digidisplay-update

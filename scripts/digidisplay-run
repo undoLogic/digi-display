@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+SERVICE_NAME="digidisplay.service"
+
+log() {
+  printf '%s\n' "$*"
+}
+
+fail() {
+  printf 'ERROR: %s\n' "$*" >&2
+  exit 1
+}
+
+command -v systemctl >/dev/null 2>&1 || fail "systemctl was not found."
+
+systemctl --user list-unit-files "$SERVICE_NAME" >/dev/null 2>&1 \
+  || fail "$SERVICE_NAME was not found for this user. Run 'just digidisplay' first."
+
+systemctl --user start "$SERVICE_NAME"
+
+log "DigiDisplay kiosk started on the display."

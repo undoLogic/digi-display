@@ -12,6 +12,9 @@ digidisplay-status:
 digidisplay-cancel:
     @bash scripts/digidisplay-cancel
 
+digidisplay-run:
+    @bash scripts/digidisplay-run
+
 digidisplay-launch:
     @bash scripts/digidisplay-launch
 
