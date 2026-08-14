@@ -205,3 +205,8 @@ DigiDisplay is licensed under the Apache License 2.0. See `LICENSE` and `NOTICE`
 The screen keeps turning off
 - Ensure the "Dim Automatically" is set to never
 - Also Ensure "Turn Off Screen" is set to never
+
+The virtual keyboard is not working
+- System Settings → Keyboard → Virtual Keyboard
+- Select Plasma Keyboard. > Top right > Set Show Virtual Keyboard to With Touch, Tablet, and Mouse.
+- Click Apply.
