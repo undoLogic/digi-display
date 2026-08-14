@@ -28,6 +28,7 @@ The setup will:
 - Write `~/digidisplay.json`
 - Prepare a dedicated Firefox profile
 - Install a systemd user service
+- Set automatic display dimming and screen turn-off to Never for every power state
 - Offer desktop autologin for the current user (sddm or plasmalogin, whichever is active)
 - Offer to reboot
 

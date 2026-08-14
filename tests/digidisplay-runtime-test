@@ -204,6 +204,10 @@ write_fake_commands
 mkdir -p "$TEST_ROOT/home"
 
 run_local_setup
+for profile in AC Battery LowBattery; do
+  assert_contains "kwriteconfig6 --file powerdevilrc --group $profile --group Display --key DimDisplayWhenIdle false"
+  assert_contains "kwriteconfig6 --file powerdevilrc --group $profile --group Display --key TurnOffDisplayWhenIdle false"
+done
 
 write_local_config
 run_launch >/dev/null

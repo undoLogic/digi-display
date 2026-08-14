@@ -41,10 +41,11 @@ https://www.digi-display.com/en
 
 After setup, reboot the device. Firefox should open automatically in kiosk mode.
 
-## Manual steps (will be automated in the future)
+## Manual steps
 - First firefox start you need to click continue
 - Then close and reopen and you need to close the open previous tabs
-- 
+
+The setup automatically sets **Dim automatically** and **Turn off screen** to **Never** for AC, battery, and low-battery power states.
 
 ## Local Runtime (Docker)
 

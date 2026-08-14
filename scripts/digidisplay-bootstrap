@@ -305,12 +305,12 @@ configure_kde_power_management() {
   # disabled directly.
   local profile
   for profile in AC Battery LowBattery; do
-    "$kwriteconfig" --file powerdevilrc --group "$profile" --key DimDisplayWhenIdle false
-    "$kwriteconfig" --file powerdevilrc --group "$profile" --key DimDisplayIdleTimeoutSec 0
-    "$kwriteconfig" --file powerdevilrc --group "$profile" --key TurnOffDisplayWhenIdle false
-    "$kwriteconfig" --file powerdevilrc --group "$profile" --key TurnOffDisplayIdleTimeoutSec 0
-    "$kwriteconfig" --file powerdevilrc --group "$profile" --key LockBeforeTurnOffDisplay false
-    "$kwriteconfig" --file powerdevilrc --group "$profile" --key AutoSuspendIdleTimeoutSec 0
+    "$kwriteconfig" --file powerdevilrc --group "$profile" --group Display --key DimDisplayWhenIdle false
+    "$kwriteconfig" --file powerdevilrc --group "$profile" --group Display --key DimDisplayIdleTimeoutSec 0
+    "$kwriteconfig" --file powerdevilrc --group "$profile" --group Display --key TurnOffDisplayWhenIdle false
+    "$kwriteconfig" --file powerdevilrc --group "$profile" --group Display --key TurnOffDisplayIdleTimeoutSec 0
+    "$kwriteconfig" --file powerdevilrc --group "$profile" --group Display --key LockBeforeTurnOffDisplay false
+    "$kwriteconfig" --file powerdevilrc --group "$profile" --group SuspendAndShutdown --key AutoSuspendIdleTimeoutSec 0
   done
 
   if command -v systemctl >/dev/null 2>&1 && systemctl --user list-unit-files plasma-powerdevil.service >/dev/null 2>&1; then
