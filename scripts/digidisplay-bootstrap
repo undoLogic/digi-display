@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 APP_NAME="DigiDisplay"
-DEFAULT_URL="https://www.digi-display.com/en"
+DEFAULT_URL="https://www.undologic.com/en/pages/screen"
 CONFIG_FILE="${DIGIDISPLAY_CONFIG:-$HOME/digidisplay.json}"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 SERVICE_TEMPLATE="$REPO_DIR/systemd/digidisplay-user.service"

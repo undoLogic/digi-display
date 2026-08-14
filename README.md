@@ -36,7 +36,7 @@ The setup asks all the questions to configure the system
 Cloud mode uses the following URL by default:
 
 ```text
-https://www.digi-display.com/en
+https://www.undologic.com/en/pages/screen
 ```
 
 After setup, reboot the device. Firefox should open automatically in kiosk mode.
@@ -196,3 +196,12 @@ tests/digidisplay-runtime-test
 ## License
 
 DigiDisplay is licensed under the Apache License 2.0. See `LICENSE` and `NOTICE`.
+
+
+
+
+
+## Troubleshooting
+The screen keeps turning off
+- Ensure the "Dim Automatically" is set to never
+- Also Ensure "Turn Off Screen" is set to never
