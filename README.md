@@ -9,9 +9,12 @@ Install Aurora DX, connect networking, open Terminal, and clone this public GitH
 ```bash
 ujust aurora-cli
 ```
+NOTE: The valkerie error appears to be the newer method from brew, so you can accept it.
 
 Confirm Git is available, then clone the repository:
 
+Install the Digi-Display files to the local computer
+- Because the repository is public, GitHub authentication is not required for cloning it.
 ```bash
 git --version
 cd ~
@@ -19,21 +22,12 @@ git clone https://github.com/undoLogic/digi-display.git digi-display
 cd ~/digi-display
 ```
 
-`ujust aurora-cli` installs Aurora's supported command-line tooling. If `git` is still unavailable, install it into the user environment with Homebrew:
-
-```bash
-brew install git
-```
-
-Because the repository is public, GitHub authentication is not required for cloning it.
-
-From the repository root, run:
-
 ```bash
 just digidisplay
 ```
 
-The setup asks whether this is a cloud or local deployment and writes the visible local config file:
+The setup asks all the questions to configure the system
+- If you want to manually adjust the configuration file you can do so at: 
 
 ```text
 ~/digidisplay.json
@@ -46,6 +40,11 @@ https://www.digi-display.com/en
 ```
 
 After setup, reboot the device. Firefox should open automatically in kiosk mode.
+
+## Manual steps (will be automated in the future)
+- First firefox start you need to click continue
+- Then close and reopen and you need to close the open previous tabs
+- 
 
 ## Local Runtime (Docker)
 
