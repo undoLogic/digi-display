@@ -116,6 +116,8 @@ just digidisplay-activate-rdp
 
 `just digidisplay-activate-rdp` fixes KRDP login failing right after credentials are entered, caused by an SELinux/`NoNewPrivileges` conflict on ostree-based images. This is also offered as a setup question during `just digidisplay`.
 
+`just digidisplay` also asks for a hostname, applied via `hostnamectl` so the device is identifiable on the network.
+
 ## Configuration
 
 The active config is stored at:
@@ -129,6 +131,7 @@ Example:
 ```json
 {
   "version": 1,
+  "hostname": "digidisplay-lobby",
   "mode": "cloud",
   "url": "https://www.undologic.com/en/pages/screen",
   "kiosk": true,

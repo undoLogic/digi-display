@@ -61,6 +61,26 @@ prompt_value() {
   printf '%s\n' "${answer:-$default}"
 }
 
+valid_hostname() {
+  local candidate="$1"
+  [ -n "$candidate" ] && [ "${#candidate}" -le 63 ] || return 1
+  [[ "$candidate" =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$ ]]
+}
+
+prompt_hostname() {
+  local default="$1"
+  local candidate
+
+  while true; do
+    candidate="$(prompt_value "Hostname (network name for this device)" "$default")"
+    if valid_hostname "$candidate"; then
+      printf '%s\n' "$candidate"
+      return
+    fi
+    printf 'Hostname must be 1-63 characters, letters/digits/hyphens only, and cannot start or end with a hyphen.\n' >&2
+  done
+}
+
 prompt_mode() {
   local default="$1"
   local mode
@@ -128,10 +148,11 @@ write_config() {
   local ssh_key="$9"
   local health_url="${10}"
   local virtual_keyboard_always_show="${11}"
+  local hostname="${12}"
 
   python3 - "$CONFIG_FILE" "$mode" "$url" "$kiosk" "$restart_browser" \
     "$repository" "$branch" "$project_path" "$docker_path" "$ssh_key" "$health_url" \
-    "$virtual_keyboard_always_show" <<'PY'
+    "$virtual_keyboard_always_show" "$hostname" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -148,6 +169,7 @@ docker_path = sys.argv[9]
 ssh_key = sys.argv[10]
 health_url = sys.argv[11]
 virtual_keyboard_always_show = sys.argv[12] == "true"
+hostname = sys.argv[13]
 
 data = {}
 if config_path.exists():
@@ -179,6 +201,7 @@ update["automatic"] = False
 
 data.update({
     "version": 1,
+    "hostname": hostname,
     "mode": mode,
     "url": url,
     "kiosk": kiosk,
@@ -375,6 +398,28 @@ detect_login_manager() {
   esac
 }
 
+configure_hostname() {
+  local hostname="$1"
+  local current
+  current="$(hostname)"
+
+  if [ "$hostname" = "$current" ]; then
+    return
+  fi
+
+  if ! command -v hostnamectl >/dev/null 2>&1; then
+    warn "hostnamectl was not found. Skipping hostname change."
+    return
+  fi
+
+  if ! command -v sudo >/dev/null 2>&1; then
+    warn "sudo was not found. Skipping hostname change."
+    return
+  fi
+
+  sudo hostnamectl set-hostname "$hostname"
+}
+
 configure_autologin() {
   if ! command -v sudo >/dev/null 2>&1; then
     warn "sudo was not found. Skipping autologin setup."
@@ -426,8 +471,10 @@ main() {
   local current_kiosk
   local current_restart
   local current_virtual_keyboard
+  local current_hostname
   local mode
   local url
+  local hostname
   local kiosk="true"
   local restart_browser="true"
   local virtual_keyboard_always_show="false"
@@ -443,6 +490,9 @@ main() {
   current_kiosk="$(json_value "kiosk" "true")"
   current_restart="$(json_value "restart_browser" "true")"
   current_virtual_keyboard="$(json_value "virtual_keyboard.always_show" "false")"
+  current_hostname="$(json_value "hostname" "$(hostname)")"
+
+  hostname="$(prompt_hostname "$current_hostname")"
 
   mode="$(prompt_mode "$current_mode")"
 
@@ -498,7 +548,8 @@ main() {
 
   write_config "$mode" "$url" "$kiosk" "$restart_browser" \
     "$repository" "$branch" "$project_path" "$docker_path" "$ssh_key" "$health_url" \
-    "$virtual_keyboard_always_show"
+    "$virtual_keyboard_always_show" "$hostname"
+  configure_hostname "$hostname"
   install_firefox_profile
   install_user_service "$restart_browser"
   configure_kde_locking
