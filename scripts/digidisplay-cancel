@@ -21,9 +21,23 @@ else
   warn "systemctl was not found."
 fi
 
-if pgrep -x firefox >/dev/null 2>&1; then
+# The flatpak-sandboxed browser runs as "firefox" (main process) plus
+# several "firefox-bin" content processes, so both names must be matched.
+FIREFOX_NAMES=(firefox firefox-bin firefox-esr)
+
+firefox_running() {
+  local name
+  for name in "${FIREFOX_NAMES[@]}"; do
+    pgrep -x "$name" >/dev/null 2>&1 && return 0
+  done
+  return 1
+}
+
+if firefox_running; then
   log "Killing Firefox..."
-  pkill -x firefox || warn "Could not close Firefox."
+  for name in "${FIREFOX_NAMES[@]}"; do
+    pkill -x "$name" 2>/dev/null || true
+  done
 else
   log "Firefox was not running."
 fi
