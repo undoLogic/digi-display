@@ -122,6 +122,18 @@ write_cloud_config() {
 JSON
 }
 
+write_cloud_config_without_url() {
+  cat > "$CONFIG_FILE" <<'JSON'
+{
+  "version": 1,
+  "mode": "cloud",
+  "kiosk": true,
+  "wait_for_network": false,
+  "restart_browser": true
+}
+JSON
+}
+
 run_launch() {
   HOME="$TEST_ROOT/home" \
   PATH="$FAKE_BIN:$PATH" \
@@ -244,6 +256,11 @@ assert_not_contains "git "
 assert_not_contains "docker "
 assert_not_contains "curl "
 assert_contains "--kiosk https://display.example.test"
+
+: > "$CALL_LOG"
+write_cloud_config_without_url
+run_launch >/dev/null
+assert_contains "--kiosk https://www.undologic.com/en/pages/screen"
 
 : > "$CALL_LOG"
 write_local_config

@@ -127,7 +127,7 @@ Example:
 {
   "version": 1,
   "mode": "cloud",
-  "url": "https://www.digi-display.com/en",
+  "url": "https://www.undologic.com/en/pages/screen",
   "kiosk": true,
   "wait_for_network": true,
   "restart_browser": true,

@@ -15,7 +15,7 @@ just digidisplay
 After setup and reboot, the device should launch Firefox in kiosk mode and display a configured public URL. If no customer URL is entered, the setup should default to:
 
 ```text
-https://www.digi-display.com/en
+https://www.undologic.com/en/pages/screen
 ```
 
 This project is not a slideshow editor, content management system, or media scheduling engine. It is the workstation bootstrap that turns a clean Aurora DX install into a professional browser-based kiosk.
@@ -185,7 +185,7 @@ Example:
 
 ```json
 {
-  "url": "https://www.digi-display.com/en",
+  "url": "https://www.undologic.com/en/pages/screen",
   "kiosk": true,
   "wait_for_network": true,
   "restart_browser": true,
@@ -199,7 +199,7 @@ Example:
 
 Initial rules:
 
-- `url` defaults to `https://www.digi-display.com/en`
+- `url` defaults to `https://www.undologic.com/en/pages/screen`
 - `kiosk` defaults to `true`
 - `wait_for_network` defaults to `true`
 - `restart_browser` defaults to `true`
@@ -214,7 +214,7 @@ Secrets should not be stored in this file.
 
 The Phase 1 prompts should stay short:
 
-- Display URL, defaulting to `https://www.digi-display.com/en`
+- Display URL, defaulting to `https://www.undologic.com/en/pages/screen`
 - Confirm kiosk mode, defaulting to yes
 - Confirm browser auto-restart, defaulting to yes
 - Confirm desktop autologin, defaulting to yes
@@ -379,7 +379,7 @@ Phase 1 is complete when:
 - The setup command prompts for the key options
 - The setup command writes a valid local config to `~/digidisplay.json`
 - The configured URL launches in Firefox kiosk mode after reboot
-- The default URL is `https://www.digi-display.com/en` when no customer URL is entered
+- The default URL is `https://www.undologic.com/en/pages/screen` when no customer URL is entered
 - The setup offers desktop autologin so the kiosk can start after reboot without a manual login
 - The display does not sleep or blank during normal operation
 - Firefox relaunches automatically if closed
@@ -395,4 +395,4 @@ Phase 1 is complete when:
 - `just digidisplay` prompts interactively
 - Desktop autologin is offered during setup and defaults to yes
 - Tailscale setup is separate: `just digidisplay-tailscale`
-- The starter URL is `https://www.digi-display.com/en`
+- The starter URL is `https://www.undologic.com/en/pages/screen`

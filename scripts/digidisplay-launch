@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-DEFAULT_URL="https://www.digi-display.com/en"
+DEFAULT_URL="https://www.undologic.com/en/pages/screen"
 REPO_DIR="${DIGIDISPLAY_REPO_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)}"
 CONFIG_FILE="${DIGIDISPLAY_CONFIG:-$HOME/digidisplay.json}"
 DEFAULT_PROFILE_DIR="$HOME/.local/share/digidisplay/firefox-profile"
