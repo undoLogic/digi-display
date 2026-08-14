@@ -108,7 +108,7 @@ just digidisplay-activate-ssh
 
 `just digidisplay-status` shows the config, systemd user service state, and recent service logs.
 
-`just digidisplay-cancel` stops the kiosk service and closes Firefox if it is still running.
+`just digidisplay-cancel` stops the kiosk service and kills Firefox if it is still running, logging whether it had to do so — useful confirmation when run over SSH.
 
 `just digidisplay-run` starts the kiosk service (the opposite of `digidisplay-cancel`). Meant to be run over SSH: it starts `digidisplay.service` via `systemctl --user`, so Firefox opens on the physical display, not the SSH session.
 

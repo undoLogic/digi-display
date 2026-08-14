@@ -22,7 +22,10 @@ else
 fi
 
 if pgrep -x firefox >/dev/null 2>&1; then
+  log "Killing Firefox..."
   pkill -x firefox || warn "Could not close Firefox."
+else
+  log "Firefox was not running."
 fi
 
 log "DigiDisplay kiosk cancelled."
