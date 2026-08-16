@@ -1,722 +1,418 @@
-# Digi-Display Configuration Workflow — Codex Handoff
+# DigiDisplay configuration pull/apply workflow
 
-## Purpose
+## Status and purpose
 
-This document captures the latest architecture decision for the Digi-Display Aurora client.
+This is a pre-implementation specification, reconciled with the code currently in this repository.
 
-The goal is to simplify the device workflow substantially.
-
-The Aurora device should **not** be highly interactive and should **not** contain customer-facing content logic itself.
-
-Its job is primarily to:
-
-1. Store a local JSON configuration.
-2. Pull a configuration from the Digi-Display server when requested.
-3. Apply the current local configuration to the immutable Aurora system.
-4. Ultimately launch URLs, whether those URLs are cloud-hosted or served locally from Docker.
-
-The current interactive configuration workflow should therefore be broken apart into smaller, explicit commands.
-
----
-
-# Core Principle
-
-The Digi-Display box is a **URL runtime**.
-
-It should ultimately display one of two things:
-
-- A remote/cloud URL.
-- A localhost URL served by a Dockerized project running on the device.
-
-Even when Docker is used, the screen itself is still just opening a URL.
-
-The Aurora layer should remain minimal.
-
----
-
-# New Command Model
-
-The desired command structure is:
-
-```bash
-ujust digidisplay-pull
-ujust digidisplay-pull <group_id>
-ujust digidisplay-apply
-```
-
-Naming may be adjusted to match the existing repository conventions, but the behavior should follow this model.
-
----
-
-# 1. `digidisplay-pull`
-
-## Purpose
-
-Download the Digi-Display configuration JSON from the Digi-Display server and save it locally.
-
-This command should **not** apply the configuration.
-
-It only retrieves and stores the JSON.
-
----
-
-## Optional Group ID
-
-The command accepts an optional integer:
-
-```bash
-ujust digidisplay-pull 123
-```
-
-For now, that integer represents the existing server-side `group_id`.
-
-The group ID is intentionally being used as a simple first implementation.
-
-This is **not intended to be the final security model**.
-
-Later it can be replaced or supplemented with:
-
-- Device IDs
-- Tokens
-- Authentication
-- Deployment IDs
-- Signed configuration requests
-
-Do not overbuild that security layer yet.
-
----
-
-## No Group ID
-
-The command must also work with no argument:
-
-```bash
-ujust digidisplay-pull
-```
-
-If no group ID is provided, the server should return an empty/default configuration.
-
-This allows a Digi-Display device to be provisioned without first creating a customer or associating the device with an account.
-
-That is important.
-
-The system must support:
+The goal is to make the device configuration workflow explicit and noninteractive:
 
 ```text
-Generic device
-→ local configuration
-→ no cloud/customer association required
+server -> pull -> ~/digidisplay.json -> review/edit -> apply -> Aurora device
 ```
 
----
+The DigiDisplay device remains a URL runtime. In `cloud` mode Firefox opens a remote URL. In `local` mode the existing runtime prepares a Git-managed Docker Compose application and Firefox opens its configured localhost URL.
 
-# Server Endpoint
+This feature must extend that working behavior rather than introduce a second runtime or a replacement schema.
 
-Create a simple Digi-Display configuration route in the UpdateCase/Digi-Display server.
+## Current implementation facts
 
-Conceptually:
+The following are already implemented and are constraints for this work:
+
+- This is the Aurora client repository. It does not contain the UpdateCase/Digi-Display CakePHP application or its routes.
+- Repository commands are local `just` recipes. This repository does not currently install system-wide `ujust` recipes.
+- The persistent configuration file is `~/digidisplay.json`. All current scripts also support the `DIGIDISPLAY_CONFIG` environment override.
+- The current schema version is `1`.
+- Supported modes are `cloud` and `local`, not `cloud` and `docker`.
+- `local` is already the Docker Compose mode. Its settings live under the `local` object.
+- `scripts/digidisplay-launch` reads the JSON and launches the runtime.
+- `scripts/digidisplay-bootstrap` currently asks questions, writes the JSON, and performs machine setup.
+- `scripts/digidisplay-update` is the only command that updates an existing local application checkout. Ordinary launch does not pull application code.
+- The systemd user unit is `digidisplay.service`.
+- Tailscale, SSH activation, RDP activation, status, run, cancel, launch, and local application update already have distinct command concerns.
+
+The new implementation should use the existing names and paths. Examples in this document therefore use `just`, which means they are run from the cloned DigiDisplay repository (normally `~/digi-display`). Packaging these recipes as system-wide `ujust` commands can be considered separately.
+
+## Command model
+
+Add these repository recipes:
+
+```bash
+just digidisplay-pull
+just digidisplay-pull 123
+just digidisplay-apply
+```
+
+The intended administrator workflow is:
+
+```bash
+cd ~/digi-display
+just digidisplay-pull 123
+nano ~/digidisplay.json
+just digidisplay-apply
+```
+
+`pull` and `apply` must remain separate:
+
+- `digidisplay-pull` retrieves, validates, and atomically stores configuration. It makes no system or runtime changes.
+- `digidisplay-apply` reads the current local file, validates it, applies the represented machine settings, installs/updates the user service, and makes the selected runtime active. It does not contact the Digi-Display server.
+
+This separation permits review, local edits, offline reapplication, and Community Edition use without a cloud account.
+
+## Configuration contract
+
+### Location
+
+The active file remains:
+
+```text
+~/digidisplay.json
+```
+
+This path is in the mutable home directory and survives normal Aurora reboots and image updates. New scripts must continue to honor:
+
+```bash
+DIGIDISPLAY_CONFIG=/another/path/config.json
+```
+
+### Version 1 schema
+
+Do not add a parallel `docker` object or a `mode: "docker"` value. Add `group_id` to the existing version-1 document and preserve the current field names.
+
+A complete cloud configuration is:
+
+```json
+{
+  "version": 1,
+  "group_id": false,
+  "hostname": "digidisplay",
+  "mode": "cloud",
+  "url": "https://www.undologic.com/en/pages/screen",
+  "kiosk": true,
+  "wait_for_network": true,
+  "restart_browser": true,
+  "virtual_keyboard": {
+    "always_show": false
+  },
+  "remote_admin": {
+    "tailscale": false,
+    "ssh": false,
+    "nomachine": false
+  },
+  "update": {
+    "automatic": false
+  }
+}
+```
+
+A complete local/Docker configuration is:
+
+```json
+{
+  "version": 1,
+  "group_id": false,
+  "hostname": "digidisplay-local",
+  "mode": "local",
+  "url": "http://localhost",
+  "kiosk": true,
+  "wait_for_network": false,
+  "restart_browser": true,
+  "virtual_keyboard": {
+    "always_show": false
+  },
+  "remote_admin": {
+    "tailscale": false,
+    "ssh": false,
+    "nomachine": false
+  },
+  "local": {
+    "repository": "git@github.com:example/private-project.git",
+    "branch": "main",
+    "project_path": "~/DigiDisplay/projects/client-project",
+    "docker_path": "docker-wsl",
+    "ssh_key": "~/.ssh/digidisplay",
+    "health_url": "http://localhost/"
+  },
+  "update": {
+    "automatic": false
+  }
+}
+```
+
+The browser always uses top-level `url`. In local mode, `local.health_url` is independently used to decide when the Docker application is ready.
+
+`local.ssh_key` is a local path only. Private key contents, passwords, tokens, and other secrets must never be returned by the unauthenticated group endpoint or stored directly in this JSON.
+
+### `group_id`
+
+`group_id` identifies the server-side group used to produce the configuration:
+
+- An unassigned or locally managed device uses JSON boolean `false`.
+- A cloud-managed device uses a positive JSON integer.
+- Strings, zero, negative integers, `true`, arrays, and objects are invalid.
+
+Existing installed version-1 files predate this field. For backward compatibility, `digidisplay-apply` must accept a missing `group_id`, treat it as `false`, and atomically normalize the local file to include it. Newly created, downloaded, and example files must always contain the field.
+
+Adding this optional field does not require a schema version bump because it is metadata and does not change existing runtime field meanings.
+
+### Existing fields that are not fully declarative
+
+The version-1 document contains fields that the current implementation only partially acts on:
+
+- `remote_admin.ssh: true` may enable SSH through the existing activation script. `false` does not currently disable an already enabled SSH service.
+- `remote_admin.tailscale` and `remote_admin.nomachine` are recorded but are not applied by the bootstrap script.
+- `update.automatic` is currently forced to `false`; automatic application or OS updates are not implemented.
+
+The first `digidisplay-apply` implementation must preserve these semantics. It must not silently add destructive disable behavior or automatic management.
+
+Autologin, RDP activation, and reboot are currently interactive bootstrap choices and are not represented in the JSON. They are outside the first `apply` contract. RDP and SSH continue to have their existing explicit recipes. A later schema revision can make additional provisioning state declarative if required.
+
+## `digidisplay-pull`
+
+### Input
+
+The recipe accepts zero or one argument:
+
+```bash
+just digidisplay-pull
+just digidisplay-pull 123
+```
+
+If supplied, the argument must contain ASCII decimal digits and represent a positive integer. Extra arguments or invalid values must fail before making an HTTP request.
+
+### Server requests
+
+The proposed endpoint contract is:
+
+```http
+GET /configure
+GET /configure/{group_id}
+Accept: application/json
+```
+
+Examples:
 
 ```text
 https://site2staging.digi-display.com/configure
+https://site2staging.digi-display.com/configure/123
 ```
 
-or:
+The exact route and production base URL must be finalized in the UpdateCase/Digi-Display server repository. They must not be inferred from this client repository. The client implementation should keep the endpoint configurable for staging and tests rather than embedding the example staging hostname throughout the script.
+
+The CakePHP endpoint is a separate cross-repository prerequisite. It should return one complete version-1 configuration object, not a wrapper object and not a partial patch.
+
+For `/configure`, the response must be a usable unassigned default with `group_id: false`. It should use the complete cloud example above unless the server product has another agreed public default URL. Returning an empty `mode` or empty `url` would deliberately produce a file that `apply` rejects and is therefore not the preferred contract.
+
+For `/configure/{group_id}`, the response must contain the same positive integer in `group_id`. A missing group should return an appropriate non-2xx response, preferably `404`, rather than an unassigned configuration.
+
+### Pull validation and replacement
+
+`digidisplay-pull` must:
+
+1. Validate its argument.
+2. Download to a temporary file created in the destination file's directory.
+3. Require a successful HTTP status.
+4. Parse the response as a top-level JSON object.
+5. Validate the complete supported schema before replacement.
+6. Confirm `group_id` is `false` for a no-argument request or exactly matches the requested integer.
+7. Write a final newline and atomically rename the temporary file over `~/digidisplay.json`.
+8. Clean up its temporary file on every failure.
+9. Print the saved path and tell the administrator to run `just digidisplay-apply`.
+
+Validation before replacement is important. A syntactically valid but unusable response must not destroy a working configuration.
+
+The command must leave the existing local file byte-for-byte unchanged when any of these occur:
+
+- DNS, TLS, connection, timeout, or other transport failure.
+- Non-success HTTP response.
+- Empty response or invalid JSON.
+- JSON with the wrong top-level type.
+- Unsupported schema version or mode.
+- Missing or invalid required fields.
+- A response `group_id` that does not match the request.
+- Temporary-file, permission, or rename failure.
+
+`pull` must not apply settings, restart the service, launch Firefox, start Docker, update a local Git checkout, enroll Tailscale, or check the device in anywhere else.
+
+## `digidisplay-apply`
+
+### Responsibility
+
+`digidisplay-apply` replaces the noninteractive, config-backed portion of the current bootstrap flow:
 
 ```text
-https://site2staging.digi-display.com/configure/{group_id}
+read JSON -> normalize legacy group_id -> validate/preflight -> apply settings -> activate runtime
 ```
 
-The final URL structure should follow existing CakePHP routing conventions.
+The implementation should extract and reuse functions from `scripts/digidisplay-bootstrap`; it should not duplicate the Firefox, systemd, KDE, hostname, wallpaper, or SSH setup logic in a second independent implementation.
 
-The endpoint should return JSON only.
+The existing interactive `just digidisplay` command may remain as a convenience/legacy provisioning entry point during migration. If retained, it should write the same schema and call shared apply functions so the two paths cannot drift.
 
-Example request:
+### Validation and preflight
 
-```text
-GET /configure/123
-```
+All configuration validation must finish before machine settings are changed. At minimum, require:
 
-Example response:
+- Readable, valid JSON with a top-level object.
+- `version` equal to integer `1`.
+- A valid `group_id`, including the missing-field legacy rule above.
+- `hostname` accepted by the current hostname validator.
+- `mode` equal to `cloud` or `local`.
+- `url` beginning with `http://` or `https://`.
+- Boolean values for `kiosk`, `wait_for_network`, and `restart_browser`.
+- `virtual_keyboard.always_show` to be boolean when present.
+- Supported `remote_admin` and `update` values to have the expected types.
+- `update.automatic` to remain `false` until automatic updates are implemented.
 
-```json
-{
-    "group_id": 123,
-    "mode": "cloud",
-    "url": "https://example.com/display",
-    "docker": null
-}
-```
+For `local` mode, also require:
 
-If no group ID is supplied:
+- Non-empty `local.repository`.
+- Non-empty `local.branch`.
+- Non-empty `local.project_path`.
+- Non-empty, relative `local.docker_path` that resolves inside `local.project_path`.
+- `local.ssh_key` to be a string; it may be empty for public repositories.
+- `local.health_url` beginning with `http://` or `https://`.
+- Git, Docker, Docker Compose, and curl to be available.
 
-```text
-GET /configure
-```
+Firefox, Python, and systemd must also be available before application begins. Because this command is noninteractive, a missing dependency must produce an actionable error rather than an installation prompt.
 
-Return a default/empty configuration, for example:
+Unknown keys may be preserved for forward compatibility, but unknown modes or incompatible field types must never be silently replaced with fallback values during `apply`.
 
-```json
-{
-    "group_id": false,
-    "mode": "",
-    "url": "",
-    "docker": null
-}
-```
+### Apply behavior
 
-The exact schema can evolve, but the local file must always contain a `group_id` field.
+After successful validation and preflight, `digidisplay-apply` should reuse the existing operations to:
 
----
+1. Configure the hostname.
+2. Enable SSH only when the existing `remote_admin.ssh` semantics request it.
+3. Install/update the DigiDisplay Firefox profile.
+4. Install/update and enable `digidisplay.service`, including its restart policy from `restart_browser`.
+5. Configure KDE locking and power management.
+6. Configure the Plasma virtual keyboard from `virtual_keyboard.always_show`.
+7. Install/apply the DigiDisplay wallpaper.
+8. Restart an active kiosk service, or start it if it is installed but inactive, so the new configuration becomes active without requiring a reboot.
 
-# Local Configuration File
+If local mode is selected, starting the service invokes the already implemented local runtime: clone the repository only when missing, run `docker compose up -d --build`, wait for `local.health_url`, and then open top-level `url`. `apply` must not fetch or update an existing checkout; `just digidisplay-update` remains the explicit update operation.
 
-The downloaded JSON should be stored as the device's local Digi-Display configuration file.
+Validation prevents malformed configuration from causing partial changes. Machine configuration itself is not transactional, so an operational failure after application begins must stop immediately, report which operation failed, and return nonzero. The command must not claim success or hide the failure.
 
-Use the existing configuration location if one already exists.
+`apply` must not contact the Digi-Display configuration endpoint, change an existing `group_id` (apart from adding `false` to a legacy file where the field is absent), enroll Tailscale, activate RDP, enable automatic polling, push local configuration to the cloud, or reboot the device.
 
-If not, Codex should identify an appropriate persistent path that works correctly with Aurora's immutable model.
+## Local-only and cloud-managed ownership
 
-The important requirement is:
+### Community/self-managed
 
-> The configuration must survive normal reboots and system updates.
-
----
-
-# Local Editing
-
-After pulling the configuration, the administrator should be able to edit it directly.
-
-Example:
-
-```bash
-nano /path/to/digidisplay-config.json
-```
-
-The previous interactive wizard is no longer the preferred ongoing workflow.
-
-Instead:
-
-```text
-Pull JSON
-→ edit JSON if necessary
-→ apply JSON
-```
-
-This is simpler and more transparent.
-
----
-
-# 2. `digidisplay-apply`
-
-## Purpose
-
-Read the **current local configuration JSON** and apply it to the Aurora system.
-
-This command should reuse the logic that currently exists in the interactive Digi-Display configuration process.
-
-The difference is that the values no longer come from interactive questions.
-
-They come from the JSON file.
-
-Conceptually:
-
-```text
-OLD
-
-Ask questions
-→ collect answers
-→ make system changes
-```
-
-becomes:
-
-```text
-NEW
-
-Read JSON
-→ validate values
-→ make system changes
-```
-
----
-
-# Important Separation
-
-`pull` and `apply` must remain separate.
-
-## Pull
-
-```text
-Server → local JSON
-```
-
-## Apply
-
-```text
-Local JSON → system configuration
-```
-
-This separation is intentional.
-
-It allows:
-
-- Reviewing a downloaded configuration before applying it.
-- Manually editing local configuration.
-- Reapplying existing configuration without contacting the server.
-- Running Digi-Display completely locally.
-- Easier debugging.
-- Easier automation later.
-
----
-
-# Local-Only / Free Model
-
-A Digi-Display device should be completely usable without a Digi-Display cloud account.
-
-The user can:
-
-1. Install/provision Digi-Display.
-2. Pull an empty configuration or create/edit the JSON locally.
-3. Add their own URL.
-4. Run `digidisplay-apply`.
-5. Operate the device independently.
-
-In this mode:
+A device is fully usable with:
 
 ```json
 "group_id": false
 ```
 
-The configuration exists only locally.
-
-There is **no expectation that Digi-Display has a cloud backup of it**.
-
-This distinction should be clear in the architecture.
-
----
-
-# Cloud-Managed Model
-
-If the customer has a Digi-Display account, their configuration can be maintained through the Digi-Display SaaS application.
-
-That application is based on UpdateCase with Digi-Display branding.
-
-The workflow becomes:
-
-```text
-Customer edits configuration in Digi-Display SaaS
-→ server stores configuration
-→ device runs digidisplay-pull <group_id>
-→ latest JSON replaces local JSON
-→ device runs digidisplay-apply
-→ updated configuration becomes active
-```
-
-Initially, `pull` can be manual.
-
-Later it may be:
-
-- Scheduled
-- Triggered remotely
-- Run automatically
-- Connected to a device management system
-
-Do not implement automatic polling unless it is already trivial.
-
----
-
-# Cloud vs Local Configuration Boundary
-
-This distinction is important commercially and technically.
-
-## Local Configuration
-
-If a customer edits the local JSON manually:
-
-```text
-Device JSON changes
-```
-
-Those changes are **not automatically synchronized back to the Digi-Display cloud**.
-
-There is no bidirectional sync at this stage.
-
-The cloud does not know about those local changes.
-
-This is intentional.
-
----
-
-## Cloud Configuration
-
-If the customer wants Digi-Display to maintain the authoritative configuration:
-
-```text
-Digi-Display SaaS
-→ server configuration
-→ pull to device
-```
-
-The cloud version is the authoritative copy.
-
-That provides the basis for:
-
-- Backup
-- Device replacement
-- Reprovisioning
-- Centralized management
-- Managed service
-- Future automatic updates
-
----
-
-# Device Swap / Recovery Relationship
-
-This configuration model directly supports the managed-device replacement concept.
-
-For a managed customer:
-
-```text
-Configuration exists in Digi-Display cloud
-→ old device fails
-→ replacement device is provisioned
-→ digidisplay-pull <group_id>
-→ digidisplay-apply
-→ deployment is restored
-```
-
-This is one of the commercial advantages of using Digi-Display's cloud service.
-
-If a customer manages configuration only locally, Digi-Display cannot promise that the latest local-only changes are recoverable from the cloud.
-
----
-
-# Do Not Automatically Check In
-
-A fresh Community Edition / generic Digi-Display installation should **not automatically register itself with Digi-Display servers**.
-
-There should be no hidden automatic onboarding.
-
-The user/admin deliberately runs:
+The administrator may create or edit `~/digidisplay.json` directly and run:
 
 ```bash
-ujust digidisplay-pull <group_id>
+just digidisplay-apply
 ```
 
-when they want the device associated with a Digi-Display cloud configuration.
+No pull and no Digi-Display account are required. A fresh installation must not automatically register or contact Digi-Display services.
 
-This keeps the open/community system independent from the commercial service.
+### Cloud-managed
 
----
-
-# Tailscale
-
-Tailscale remains the preferred remote-management mechanism for managed deployments.
-
-However, Tailscale enrollment is a separate concern from configuration retrieval.
-
-Do not couple:
+The initial managed workflow is intentionally manual:
 
 ```text
-Tailscale identity
+customer edits configuration in Digi-Display SaaS
+-> administrator runs just digidisplay-pull <group_id>
+-> downloaded file atomically replaces local configuration
+-> administrator reviews it
+-> administrator runs just digidisplay-apply
 ```
 
-directly to:
+The cloud copy is authoritative only for fields represented in the server response. Local edits are not uploaded. The next successful pull replaces them.
 
-```text
-Digi-Display configuration identity
-```
+For recovery or device replacement, JSON restoration does not by itself restore external prerequisites such as a private Git deploy key, Git host keys, Docker data/volumes, Tailscale enrollment, or other machine credentials. Those must be provisioned separately.
 
-at this stage.
+## Security boundary
 
-They may be integrated later, but they serve different purposes:
+Using a predictable `group_id` without authentication is acceptable only as an explicitly temporary, low-security transport for non-sensitive configuration.
 
-- Tailscale = secure remote access / management.
-- Digi-Display config endpoint = application/device configuration.
+- Do not treat `group_id` as a secret or authentication factor.
+- Do not return credentials, private keys, tokens, passwords, customer secrets, or other sensitive fields.
+- Avoid returning information that should not be publicly enumerable.
+- Use HTTPS and fail on certificate errors.
+- Add device authentication or signed requests before this endpoint carries sensitive configuration or is treated as a production management channel.
 
----
+Tailscale remains a separate remote-access concern. Do not use Tailscale identity as DigiDisplay configuration identity in this phase, and do not enroll Tailscale as a side effect of pull or apply.
 
-# Initial JSON Schema
+## Non-goals for this phase
 
-Keep the first schema small.
+- Installing repository recipes into the system-wide `ujust` catalog.
+- Automatic polling or scheduled pulls.
+- Automatic check-in or device registration.
+- Bidirectional synchronization or pushing local edits.
+- Authentication beyond the temporary `group_id` lookup.
+- Automatic Aurora OS updates.
+- Updating an existing local application checkout during launch or apply.
+- A new `docker` mode or a second Docker configuration schema.
+- Declarative disabling/removal of SSH, RDP, Tailscale, or NoMachine.
+- Moving private keys or other credentials through configuration JSON.
 
-A reasonable starting point is:
+## Required implementation scope
 
-```json
-{
-    "group_id": false,
-    "mode": "cloud",
-    "url": "",
-    "docker": {
-        "enabled": false,
-        "source": "",
-        "local_url": ""
-    }
-}
-```
+### Aurora client repository
 
-This is only an example.
+1. Add `scripts/digidisplay-pull` and its optional-argument `just` recipe.
+2. Add `scripts/digidisplay-apply` and its `just` recipe.
+3. Extract shared validation/application helpers from the current bootstrap where practical.
+4. Add `group_id: false` to the example configuration and to JSON written by the interactive path.
+5. Preserve `DIGIDISPLAY_CONFIG` support.
+6. Update user documentation after the commands exist.
+7. Keep all existing runtime commands working.
 
-Codex should compare it with the fields already used by the current interactive configuration before finalizing the schema.
+### UpdateCase/Digi-Display server repository
 
-Reuse existing configuration names where practical rather than inventing a completely new structure.
+1. Add the agreed CakePHP JSON route for the default and optional positive group ID.
+2. Serialize a complete, supported version-1 DigiDisplay configuration.
+3. Return `group_id: false` only for the no-group default request.
+4. Return non-2xx for missing/invalid groups and server failures.
+5. Exclude secrets and other fields unsuitable for a public, enumerable endpoint.
+6. Add endpoint contract tests.
 
----
+The server work cannot be implemented or verified in this Aurora repository because the CakePHP application is not present here.
 
-# Expected Runtime Modes
+## Verification and acceptance criteria
 
-## Cloud URL
+Before this feature is complete, automated tests should prove:
 
-```json
-{
-    "group_id": 123,
-    "mode": "cloud",
-    "url": "https://client.example.com/signage"
-}
-```
+- Pull with no argument accepts a valid default response containing `group_id: false`.
+- Pull with a positive group ID accepts only a response with the same ID.
+- Invalid, zero, negative, extra, and non-integer arguments fail without a request.
+- Network, HTTP, JSON, schema, ID-mismatch, and write failures preserve an existing config byte-for-byte.
+- Pull has no systemd, Firefox, Docker, Git-update, Tailscale, RDP, or reboot side effects.
+- Apply accepts and normalizes a legacy version-1 file with no `group_id`.
+- Apply rejects invalid cloud and local configs before machine mutations.
+- Apply is noninteractive.
+- Apply installs/enables the user service and activates the selected URL.
+- Changing `restart_browser` updates the systemd restart policy.
+- Cloud apply does not invoke the local Docker runtime.
+- Local apply retains the existing clone-if-missing, Compose start, health-check, and browser behavior.
+- Local apply does not update an existing Git checkout.
+- The existing `tests/digidisplay-runtime-test` suite continues to pass.
 
-The browser opens the remote URL.
-
----
-
-## Local Docker
-
-Future example:
-
-```json
-{
-    "group_id": 123,
-    "mode": "docker",
-    "docker": {
-        "enabled": true,
-        "source": "...",
-        "local_url": "http://localhost:8080"
-    }
-}
-```
-
-The system prepares/runs the Docker project.
-
-The browser still only opens:
-
-```text
-http://localhost:8080
-```
-
-Again, the browser/runtime should not care whether the content originates remotely or locally.
-
----
-
-# Existing Interactive Configuration
-
-Do **not** throw away working implementation unnecessarily.
-
-Codex should inspect the current configuration script and refactor it.
-
-The existing workflow likely already contains code that:
-
-- Sets kiosk behavior.
-- Sets URLs.
-- Configures Firefox.
-- Starts/restarts required services.
-- Handles other Digi-Display system settings.
-
-Extract or reuse those operations behind `digidisplay-apply`.
-
-The interactive question/answer layer should be removed from the normal configuration path.
-
----
-
-# Validation
-
-`digidisplay-apply` should perform basic validation before changing the system.
-
-Examples:
-
-- JSON is valid.
-- Required fields for the selected mode exist.
-- `mode=cloud` has a URL.
-- `mode=docker` has the required Docker information.
-- URLs have an expected scheme.
-- Unknown modes produce a useful error.
-
-Do not silently partially apply malformed configuration.
-
----
-
-# Recommended Command Behavior
-
-## Pull with Group
+The phase is accepted when this explicit workflow succeeds on Aurora DX:
 
 ```bash
-ujust digidisplay-pull 123
+cd ~/digi-display
+just digidisplay-pull [group_id]
+nano ~/digidisplay.json
+just digidisplay-apply
 ```
 
-Expected output conceptually:
+and the same device can still be configured and operated locally without a Digi-Display cloud account.
 
-```text
-Fetching Digi-Display configuration for group 123...
-Configuration downloaded.
-Saved to: /path/to/config.json
+## Decisions still required before client/server programming
 
-Run:
-ujust digidisplay-apply
+The repository inspection cannot determine these product/server details:
 
-to apply this configuration.
-```
+1. The final CakePHP route and production base URL. The staging URL in this document is illustrative.
+2. The public default URL returned by the no-group endpoint, if it should differ from the current `https://www.undologic.com/en/pages/screen` default.
+3. Which version-1 fields the unauthenticated server is allowed to expose. The response must still be complete enough to pass client validation.
 
----
-
-## Pull Without Group
-
-```bash
-ujust digidisplay-pull
-```
-
-Expected:
-
-```text
-Fetching default Digi-Display configuration...
-Default configuration downloaded.
-Saved to: /path/to/config.json
-```
-
----
-
-## Apply
-
-```bash
-ujust digidisplay-apply
-```
-
-Expected:
-
-```text
-Reading Digi-Display configuration...
-Validating configuration...
-Applying Digi-Display settings...
-Configuration applied successfully.
-```
-
----
-
-# Error Handling
-
-`pull` should fail cleanly if:
-
-- Server cannot be reached.
-- HTTP response is not successful.
-- Response is not valid JSON.
-- File cannot be written.
-
-Importantly:
-
-> Do not destroy the existing valid local configuration if a pull fails.
-
-Use a temporary file.
-
-Conceptually:
-
-```text
-download → validate → replace existing configuration
-```
-
-not:
-
-```text
-erase current config → attempt download
-```
-
-This protects working deployments.
-
----
-
-# Security Note
-
-Using `group_id` alone is intentionally low security for the first implementation.
-
-Do not treat the group ID as a secret.
-
-Do not place sensitive credentials in the returned JSON while this endpoint is identified only by a predictable integer.
-
-For now the configuration endpoint should contain only low-risk configuration.
-
-Before production cloud-managed deployments containing sensitive values, add proper authentication or device-specific credentials.
-
----
-
-# Business Model Supported by This Architecture
-
-This workflow cleanly supports two product paths.
-
-## Community / Self Managed
-
-```text
-Free image
-+ own hardware
-+ own/local JSON
-+ own URL
-```
-
-No Digi-Display cloud service required.
-
----
-
-## Digi-Display Managed / Cloud
-
-```text
-Digi-Display SaaS
-+ centralized JSON
-+ pull configuration
-+ device recovery
-+ remote management
-+ managed service
-```
-
-The commercial value is not locking the device.
-
-The commercial value is:
-
-- Centralized management
-- Configuration backup
-- Easy reprovisioning
-- Support
-- Monitoring
-- Tailscale management
-- Managed content
-- Device replacement
-- Custom URL/application development
-
----
-
-# Codex Implementation Request
-
-Please inspect the current Aurora Digi-Display repository and existing interactive configuration implementation before changing code.
-
-Then implement/refactor toward the following:
-
-1. Create `digidisplay-pull`.
-2. Make its integer `group_id` argument optional.
-3. Create/configure a server endpoint that returns Digi-Display JSON.
-4. Store the returned JSON in the existing appropriate persistent config location.
-5. Ensure failed pulls do not overwrite a valid existing configuration.
-6. Ensure the JSON always contains `group_id`, using `false` when unassigned.
-7. Refactor the existing interactive configuration logic into `digidisplay-apply`.
-8. `digidisplay-apply` must read configuration from the local JSON instead of asking interactive questions.
-9. Keep the first JSON schema as close as practical to the values already supported by the current implementation.
-10. Do not introduce automatic cloud check-in.
-11. Do not introduce bidirectional sync.
-12. Do not tightly couple Tailscale to this configuration system.
-13. Preserve Community Edition/local-only operation.
-14. Keep the architecture compatible with future Docker/local URL mode.
-15. Before making large structural changes, report any conflicts between this plan and the current implementation.
-
-The immediate objective is a simple, explicit workflow:
-
-```bash
-ujust digidisplay-pull [group_id]
-nano <config-file>
-ujust digidisplay-apply
-```
-
-That is the desired foundation.
+These decisions do not change the client architecture, but they should be resolved before hard-coding the endpoint contract.
