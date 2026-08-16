@@ -10,10 +10,26 @@ Open the visible config file in the home directory:
 ~/digidisplay.json
 ```
 
-Edit `url`, save the file, then restart the service:
+Edit `url`, save the file, then validate and apply the configuration:
 
 ```bash
-systemctl --user restart digidisplay.service
+just digidisplay-apply
+```
+
+## Restore A Pull Backup
+
+Pull backups are stored beside the active file with names such as:
+
+```text
+~/digidisplay-2026_08_16_10_02_11.json
+```
+
+Copy the desired backup over the active file, review it, and apply it:
+
+```bash
+cp ~/digidisplay-2026_08_16_10_02_11.json ~/digidisplay.json
+nano ~/digidisplay.json
+just digidisplay-apply
 ```
 
 ## Stop The Kiosk
@@ -56,7 +72,7 @@ systemctl --user restart digidisplay.service
 
 ## Remove Desktop Autologin
 
-If setup enabled desktop autologin, remove the DigiDisplay drop-in file. Aurora's default login
+If the config previously enabled desktop autologin, remove the DigiDisplay drop-in file. Aurora's default login
 manager is `plasmalogin`; older images may still use `sddm`:
 
 ```bash

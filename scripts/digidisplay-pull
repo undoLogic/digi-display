@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+CONFIG_ENDPOINT="${DIGIDISPLAY_CONFIG_ENDPOINT:-https://site2.digi-display.com/configure}"
+CONFIG_FILE="${DIGIDISPLAY_CONFIG:-$HOME/digidisplay.json}"
+DOWNLOAD_FILE="${CONFIG_FILE}.download"
+
+log() {
+  printf '%s\n' "$*"
+}
+
+fail() {
+  printf 'ERROR: %s\n' "$*" >&2
+  exit 1
+}
+
+backup_path() {
+  local config_dir
+  local config_name
+  local timestamp
+
+  config_dir="$(dirname "$CONFIG_FILE")"
+  config_name="$(basename "$CONFIG_FILE")"
+  timestamp="$(date '+%Y_%m_%d_%H_%M_%S')"
+
+  if [[ "$config_name" == *.json ]]; then
+    printf '%s/%s-%s.json\n' "$config_dir" "${config_name%.json}" "$timestamp"
+  else
+    printf '%s/%s-%s\n' "$config_dir" "$config_name" "$timestamp"
+  fi
+}
+
+cleanup() {
+  rm -f -- "$DOWNLOAD_FILE"
+}
+
+main() {
+  local group_id="${1:-}"
+  local request_url="${CONFIG_ENDPOINT%/}"
+  local saved_backup=""
+
+  [ "$#" -le 1 ] || fail "Usage: just digidisplay-pull [group_id]"
+  if [ -n "$group_id" ]; then
+    [[ "$group_id" =~ ^[1-9][0-9]*$ ]] || fail "group_id must be a positive integer."
+    request_url="$request_url/$group_id"
+  fi
+
+  command -v curl >/dev/null 2>&1 || fail "curl is required to download the configuration."
+  mkdir -p "$(dirname "$CONFIG_FILE")"
+
+  trap cleanup EXIT
+  log "Downloading DigiDisplay configuration from $request_url"
+  curl --fail --silent --show-error --location "$request_url" --output "$DOWNLOAD_FILE"
+
+  if [ -e "$CONFIG_FILE" ]; then
+    saved_backup="$(backup_path)"
+    mv -f -- "$CONFIG_FILE" "$saved_backup"
+    log "Backup: $saved_backup"
+  fi
+
+  if ! mv -f -- "$DOWNLOAD_FILE" "$CONFIG_FILE"; then
+    if [ -n "$saved_backup" ]; then
+      fail "Could not install the downloaded configuration. The previous file is available at $saved_backup"
+    fi
+    fail "Could not install the downloaded configuration at $CONFIG_FILE"
+  fi
+
+  trap - EXIT
+  log "Configuration saved: $CONFIG_FILE"
+  log "Run: just digidisplay-apply"
+}
+
+main "$@"

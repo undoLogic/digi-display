@@ -3,8 +3,11 @@ set shell := ["bash", "-uc"]
 _default:
     @just --list
 
-digidisplay:
-    @bash scripts/digidisplay-bootstrap
+digidisplay-pull group_id="":
+    @bash scripts/digidisplay-pull {{quote(group_id)}}
+
+digidisplay-apply:
+    @bash scripts/digidisplay-apply
 
 digidisplay-status:
     @bash scripts/digidisplay-status

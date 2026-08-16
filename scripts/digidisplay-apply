@@ -1,0 +1,364 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+APP_NAME="DigiDisplay"
+CONFIG_FILE="${DIGIDISPLAY_CONFIG:-$HOME/digidisplay.json}"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+SERVICE_TEMPLATE="$REPO_DIR/systemd/digidisplay-user.service"
+USER_SYSTEMD_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+USER_SERVICE_FILE="$USER_SYSTEMD_DIR/digidisplay.service"
+FIREFOX_PROFILE_DIR="${DIGIDISPLAY_FIREFOX_PROFILE:-$HOME/.local/share/digidisplay/firefox-profile}"
+FIREFOX_PREFS_SOURCE="$REPO_DIR/config/firefox/user.js"
+WALLPAPER_SOURCE="$REPO_DIR/assets/wallpaper/digidisplay-wallpaper.jpg"
+WALLPAPER_DEST="$HOME/.local/share/digidisplay/wallpaper.jpg"
+PLASMA_KEYBOARD_DESKTOP="${DIGIDISPLAY_PLASMA_KEYBOARD_DESKTOP:-/usr/share/applications/org.kde.plasma.keyboard.desktop}"
+
+log() {
+  printf '%s\n' "$*"
+}
+
+warn() {
+  printf 'WARNING: %s\n' "$*" >&2
+}
+
+fail() {
+  printf 'ERROR: %s\n' "$*" >&2
+  exit 1
+}
+
+json_value() {
+  local key="$1"
+  local fallback="$2"
+
+  python3 - "$CONFIG_FILE" "$key" "$fallback" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1]) as config_file:
+    value = json.load(config_file)
+
+for part in sys.argv[2].split("."):
+    if not isinstance(value, dict) or part not in value:
+        value = sys.argv[3]
+        break
+    value = value[part]
+
+if value is None:
+    value = sys.argv[3]
+if isinstance(value, bool):
+    print("true" if value else "false")
+else:
+    print(value)
+PY
+}
+
+validate_config() {
+  python3 - "$CONFIG_FILE" <<'PY'
+import json
+import re
+import sys
+
+config_path = sys.argv[1]
+
+try:
+    with open(config_path) as config_file:
+        data = json.load(config_file)
+except FileNotFoundError:
+    raise SystemExit(f"Configuration file was not found: {config_path}")
+except (OSError, json.JSONDecodeError) as error:
+    raise SystemExit(f"Could not read valid JSON from {config_path}: {error}")
+
+if not isinstance(data, dict):
+    raise SystemExit("The DigiDisplay configuration must be a JSON object.")
+if type(data.get("version")) is not int or data["version"] != 1:
+    raise SystemExit("version must be 1.")
+
+hostname = data.get("hostname")
+if not isinstance(hostname, str) or not re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?", hostname):
+    raise SystemExit("hostname must be 1-63 letters, digits, or hyphens and cannot start or end with a hyphen.")
+
+mode = data.get("mode")
+if mode not in ("cloud", "local"):
+    raise SystemExit("mode must be cloud or local.")
+
+url = data.get("url")
+if not isinstance(url, str) or not url.startswith(("http://", "https://")):
+    raise SystemExit("url must start with http:// or https://.")
+
+for key in ("kiosk", "wait_for_network", "restart_browser", "autologin", "reboot_after_apply"):
+    if key in data and not isinstance(data[key], bool):
+        raise SystemExit(f"{key} must be true or false.")
+
+virtual_keyboard = data.get("virtual_keyboard", {})
+if not isinstance(virtual_keyboard, dict):
+    raise SystemExit("virtual_keyboard must be an object.")
+if "always_show" in virtual_keyboard and not isinstance(virtual_keyboard["always_show"], bool):
+    raise SystemExit("virtual_keyboard.always_show must be true or false.")
+
+remote_admin = data.get("remote_admin", {})
+if not isinstance(remote_admin, dict):
+    raise SystemExit("remote_admin must be an object.")
+for key in ("tailscale", "ssh", "rdp", "nomachine"):
+    if key in remote_admin and not isinstance(remote_admin[key], bool):
+        raise SystemExit(f"remote_admin.{key} must be true or false.")
+
+if mode == "local":
+    local = data.get("local")
+    if not isinstance(local, dict):
+        raise SystemExit("local mode requires a local object.")
+    for key in ("repository", "branch", "project_path", "docker_path", "health_url"):
+        if not isinstance(local.get(key), str) or not local[key].strip():
+            raise SystemExit(f"local.{key} is required for local mode.")
+    if local["docker_path"].startswith("/"):
+        raise SystemExit("local.docker_path must be relative to local.project_path.")
+    if not local["health_url"].startswith(("http://", "https://")):
+        raise SystemExit("local.health_url must start with http:// or https://.")
+    if "ssh_key" in local and not isinstance(local["ssh_key"], str):
+        raise SystemExit("local.ssh_key must be a string.")
+PY
+}
+
+check_environment() {
+  if [ -r /etc/os-release ]; then
+    if ! grep -Eiq 'aurora|universal.blue|ublue' /etc/os-release; then
+      warn "This does not look like Aurora DX. Apply will continue, but DigiDisplay is intended for Aurora DX."
+    fi
+  else
+    warn "Could not read /etc/os-release to verify Aurora DX."
+  fi
+
+  command -v python3 >/dev/null 2>&1 || fail "python3 is required to read $CONFIG_FILE."
+  command -v systemctl >/dev/null 2>&1 || fail "systemctl is required for the systemd user service."
+}
+
+check_local_requirements() {
+  command -v git >/dev/null 2>&1 || fail "git is required for local mode."
+  command -v docker >/dev/null 2>&1 || fail "docker is required for local mode."
+  command -v curl >/dev/null 2>&1 || fail "curl is required for local mode."
+  docker compose version >/dev/null 2>&1 || fail "Docker Compose is not available."
+}
+
+has_firefox() {
+  command -v firefox >/dev/null 2>&1 && return 0
+  command -v flatpak >/dev/null 2>&1 && flatpak info org.mozilla.firefox >/dev/null 2>&1
+}
+
+ensure_firefox() {
+  has_firefox || fail "Firefox was not found. Install Firefox, then run 'just digidisplay-apply' again."
+}
+
+install_firefox_profile() {
+  mkdir -p "$FIREFOX_PROFILE_DIR"
+  cp "$FIREFOX_PREFS_SOURCE" "$FIREFOX_PROFILE_DIR/user.js"
+
+  if command -v flatpak >/dev/null 2>&1 && flatpak info org.mozilla.firefox >/dev/null 2>&1; then
+    mkdir -p "$HOME/.var/app/org.mozilla.firefox/digidisplay-profile"
+    cp "$FIREFOX_PREFS_SOURCE" "$HOME/.var/app/org.mozilla.firefox/digidisplay-profile/user.js"
+  fi
+}
+
+install_user_service() {
+  local restart_policy="always"
+  local escaped_config_file
+  local escaped_repo_dir
+
+  if [ "$1" != "true" ]; then
+    restart_policy="no"
+  fi
+
+  escaped_config_file="$(printf '%s' "$CONFIG_FILE" | sed 's/[&|]/\\&/g')"
+  escaped_repo_dir="$(printf '%s' "$REPO_DIR" | sed 's/[&|]/\\&/g')"
+
+  mkdir -p "$USER_SYSTEMD_DIR"
+  sed \
+    -e "s|@CONFIG_FILE@|$escaped_config_file|g" \
+    -e "s|@REPO_DIR@|$escaped_repo_dir|g" \
+    -e "s|@RESTART_POLICY@|$restart_policy|g" \
+    "$SERVICE_TEMPLATE" > "$USER_SERVICE_FILE"
+
+  systemctl --user daemon-reload
+  systemctl --user enable digidisplay.service
+}
+
+configure_kde_locking() {
+  if command -v kwriteconfig6 >/dev/null 2>&1; then
+    kwriteconfig6 --file kscreenlockerrc --group Daemon --key Autolock false
+    kwriteconfig6 --file kscreenlockerrc --group Daemon --key LockOnResume false
+  elif command -v kwriteconfig5 >/dev/null 2>&1; then
+    kwriteconfig5 --file kscreenlockerrc --group Daemon --key Autolock false
+    kwriteconfig5 --file kscreenlockerrc --group Daemon --key LockOnResume false
+  else
+    warn "KDE screen-lock settings were not changed because kwriteconfig was not found."
+  fi
+}
+
+configure_kde_power_management() {
+  local kwriteconfig=""
+  local profile
+
+  if command -v kwriteconfig6 >/dev/null 2>&1; then
+    kwriteconfig="kwriteconfig6"
+  elif command -v kwriteconfig5 >/dev/null 2>&1; then
+    kwriteconfig="kwriteconfig5"
+  else
+    warn "KDE power-management settings were not changed because kwriteconfig was not found."
+    return
+  fi
+
+  for profile in AC Battery LowBattery; do
+    "$kwriteconfig" --file powerdevilrc --group "$profile" --group Display --key DimDisplayWhenIdle false
+    "$kwriteconfig" --file powerdevilrc --group "$profile" --group Display --key DimDisplayIdleTimeoutSec 0
+    "$kwriteconfig" --file powerdevilrc --group "$profile" --group Display --key TurnOffDisplayWhenIdle false
+    "$kwriteconfig" --file powerdevilrc --group "$profile" --group Display --key TurnOffDisplayIdleTimeoutSec 0
+    "$kwriteconfig" --file powerdevilrc --group "$profile" --group Display --key LockBeforeTurnOffDisplay false
+    "$kwriteconfig" --file powerdevilrc --group "$profile" --group SuspendAndShutdown --key AutoSuspendIdleTimeoutSec 0
+  done
+
+  if systemctl --user list-unit-files plasma-powerdevil.service >/dev/null 2>&1; then
+    systemctl --user restart plasma-powerdevil.service || warn "Could not restart plasma-powerdevil.service. Power settings will apply after next login."
+  fi
+}
+
+configure_kde_virtual_keyboard() {
+  local always_show="$1"
+  local visibility_mode="1"
+
+  if ! command -v kwriteconfig6 >/dev/null 2>&1; then
+    warn "Plasma virtual-keyboard settings were not changed because kwriteconfig6 was not found."
+    return
+  fi
+
+  if [ "$always_show" = "true" ]; then
+    if [ ! -f "$PLASMA_KEYBOARD_DESKTOP" ]; then
+      warn "Plasma Keyboard was not found. Update Aurora or install plasma-keyboard to enable it."
+      return
+    fi
+    visibility_mode="2"
+    kwriteconfig6 --file kwinrc --group Wayland --key InputMethod "$PLASMA_KEYBOARD_DESKTOP"
+  fi
+
+  kwriteconfig6 --file kwinrc --group Wayland --key VirtualKeyboardMode "$visibility_mode"
+}
+
+install_wallpaper() {
+  if [ ! -f "$WALLPAPER_SOURCE" ]; then
+    return
+  fi
+
+  mkdir -p "$(dirname "$WALLPAPER_DEST")"
+  cp "$WALLPAPER_SOURCE" "$WALLPAPER_DEST"
+
+  if command -v plasma-apply-wallpaperimage >/dev/null 2>&1; then
+    if ! plasma-apply-wallpaperimage --fill-mode preserveAspectCrop "$WALLPAPER_DEST" >/dev/null 2>&1; then
+      warn "Could not set the desktop wallpaper automatically. You can set it manually via System Settings."
+    fi
+  else
+    warn "plasma-apply-wallpaperimage was not found. Skipping automatic wallpaper setup."
+  fi
+}
+
+detect_login_manager() {
+  local dm_unit
+  dm_unit="$(readlink -f /etc/systemd/system/display-manager.service 2>/dev/null || true)"
+  case "$dm_unit" in
+    */plasmalogin.service) printf 'plasmalogin\n' ;;
+    */sddm.service) printf 'sddm\n' ;;
+    *) printf 'unknown\n' ;;
+  esac
+}
+
+configure_hostname() {
+  local configured_hostname="$1"
+
+  if [ "$configured_hostname" = "$(hostname)" ]; then
+    return
+  fi
+  command -v hostnamectl >/dev/null 2>&1 || fail "hostnamectl is required to change the hostname."
+  command -v sudo >/dev/null 2>&1 || fail "sudo is required to change the hostname."
+  sudo hostnamectl set-hostname "$configured_hostname"
+}
+
+configure_autologin() {
+  local login_manager
+  local conf_dir
+  local session="plasma.desktop"
+  local tmp_file
+
+  command -v sudo >/dev/null 2>&1 || fail "sudo is required to configure autologin."
+
+  login_manager="$(detect_login_manager)"
+  case "$login_manager" in
+    plasmalogin) conf_dir="/etc/plasmalogin.conf.d" ;;
+    sddm) conf_dir="/etc/sddm.conf.d" ;;
+    *) fail "Could not detect sddm or plasmalogin as the active login manager." ;;
+  esac
+
+  tmp_file="$(mktemp)"
+  printf '[Autologin]\nUser=%s\nSession=%s\n' "$USER" "$session" > "$tmp_file"
+  sudo mkdir -p "$conf_dir"
+  sudo cp "$tmp_file" "$conf_dir/digidisplay-autologin.conf"
+  rm -f -- "$tmp_file"
+}
+
+main() {
+  local mode
+  local configured_hostname
+  local restart_browser
+  local virtual_keyboard_always_show
+  local ssh_enabled
+  local rdp_enabled
+  local autologin_enabled
+  local reboot_after_apply
+
+  log "$APP_NAME apply"
+  log "Configuration: $CONFIG_FILE"
+
+  check_environment
+  validate_config || fail "Configuration validation failed."
+
+  mode="$(json_value "mode" "")"
+  configured_hostname="$(json_value "hostname" "")"
+  restart_browser="$(json_value "restart_browser" "true")"
+  virtual_keyboard_always_show="$(json_value "virtual_keyboard.always_show" "false")"
+  ssh_enabled="$(json_value "remote_admin.ssh" "false")"
+  rdp_enabled="$(json_value "remote_admin.rdp" "false")"
+  autologin_enabled="$(json_value "autologin" "false")"
+  reboot_after_apply="$(json_value "reboot_after_apply" "false")"
+
+  if [ "$mode" = "local" ]; then
+    check_local_requirements
+  fi
+  ensure_firefox
+
+  configure_hostname "$configured_hostname"
+  if [ "$ssh_enabled" = "true" ]; then
+    bash "$REPO_DIR/scripts/digidisplay-activate-ssh"
+    warn "SSH is enabled for this device. Keep it limited to trusted networks."
+  fi
+  install_firefox_profile
+  install_user_service "$restart_browser"
+  configure_kde_locking
+  configure_kde_power_management
+  configure_kde_virtual_keyboard "$virtual_keyboard_always_show"
+  install_wallpaper
+
+  if [ "$autologin_enabled" = "true" ]; then
+    configure_autologin
+  fi
+  if [ "$rdp_enabled" = "true" ]; then
+    bash "$REPO_DIR/scripts/digidisplay-activate-rdp"
+  fi
+
+  systemctl --user restart digidisplay.service
+
+  log "Configuration applied successfully."
+  log "Service: $USER_SERVICE_FILE"
+  log "Use 'just digidisplay-status' to inspect the service."
+
+  if [ "$reboot_after_apply" = "true" ]; then
+    log "Rebooting as requested by reboot_after_apply."
+    systemctl reboot
+  fi
+}
+
+main "$@"

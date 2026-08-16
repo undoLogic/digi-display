@@ -31,7 +31,7 @@ Sections 14 and 15 are intentionally kept as future work notes, not Phase 2 bloc
 Implemented commands:
 
 ```bash
-just digidisplay
+just digidisplay-apply
 just digidisplay-launch
 just digidisplay-update
 just digidisplay-status

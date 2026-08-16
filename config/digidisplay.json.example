@@ -1,17 +1,21 @@
 {
   "version": 1,
+  "group_id": false,
   "hostname": "digidisplay",
   "mode": "cloud",
   "url": "https://www.undologic.com/en/pages/screen",
   "kiosk": true,
   "wait_for_network": true,
   "restart_browser": true,
+  "autologin": true,
+  "reboot_after_apply": false,
   "virtual_keyboard": {
     "always_show": false
   },
   "remote_admin": {
     "tailscale": false,
     "ssh": false,
+    "rdp": false,
     "nomachine": false
   },
   "update": {

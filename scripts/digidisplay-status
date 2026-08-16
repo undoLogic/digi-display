@@ -53,10 +53,16 @@ log "Config file: $CONFIG_FILE"
 
 if [ -f "$CONFIG_FILE" ]; then
   mode="$(json_value "mode" "cloud")"
+  log "Group ID: $(json_value "group_id" "false")"
+  log "Hostname: $(json_value "hostname" "not configured")"
   log "Mode: $mode"
   log "URL: $(json_value "url" "not configured")"
   log "Kiosk: $(json_value "kiosk" "true")"
   log "Restart browser: $(json_value "restart_browser" "true")"
+  log "Autologin: $(json_value "autologin" "false")"
+  log "SSH enabled by apply: $(json_value "remote_admin.ssh" "false")"
+  log "RDP fix enabled by apply: $(json_value "remote_admin.rdp" "false")"
+  log "Reboot after apply: $(json_value "reboot_after_apply" "false")"
   log "Always show virtual keyboard: $(json_value "virtual_keyboard.always_show" "false")"
   if [ "$mode" = "local" ]; then
     log "Repository: $(json_value "local.repository" "not configured")"

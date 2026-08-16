@@ -1,154 +1,108 @@
 # DigiDisplay
 
-DigiDisplay turns an Aurora DX workstation into a browser-based digital signage appliance. It can display a remote website in cloud mode or run a Git-managed Docker Compose application locally for offline operation.
+DigiDisplay turns an Aurora DX workstation into a browser-based digital-signage appliance. It can display a remote website in cloud mode or run a Git-managed Docker Compose application locally.
 
-## Quick Start
+## Install on Aurora DX
 
-Install Aurora DX, connect networking, open Terminal, and clone this public GitHub repository:
+Open Terminal and make sure Git is available:
 
 ```bash
 ujust aurora-cli
-```
-NOTE: The valkerie error appears to be the newer method from brew, so you can accept it.
-
-Confirm Git is available, then clone the repository:
-
-Install the Digi-Display files to the local computer
-- Because the repository is public, GitHub authentication is not required for cloning it.
-```bash
 git --version
+```
+
+Clone this public repository:
+
+```bash
 cd ~
 git clone https://github.com/undoLogic/digi-display.git digi-display
 cd ~/digi-display
 ```
 
-```bash
-just digidisplay
-```
-
-The setup asks all the questions to configure the system
-- If you want to manually adjust the configuration file you can do so at: 
+There is no interactive setup wizard. DigiDisplay reads all setup values from:
 
 ```text
 ~/digidisplay.json
 ```
 
-Cloud mode uses the following URL by default:
+## Get or create a configuration
+
+For a cloud-managed group, download its configuration:
+
+```bash
+just digidisplay-pull 123
+```
+
+For an unassigned/default cloud configuration:
+
+```bash
+just digidisplay-pull
+```
+
+For a self-managed device that should not contact the Digi-Display server:
+
+```bash
+cp config/digidisplay.json.example ~/digidisplay.json
+```
+
+Review or edit the file before applying it:
+
+```bash
+nano ~/digidisplay.json
+```
+
+## Apply the configuration
+
+From the repository, run:
+
+```bash
+just digidisplay-apply
+```
+
+This validates the JSON, configures the hostname and Aurora desktop settings, installs the Firefox profile and systemd user service, applies the configured SSH/RDP/autologin choices, and starts the kiosk. If `reboot_after_apply` is `true`, the device reboots after the other operations succeed.
+
+Firefox must already be installed. The first Firefox start may require accepting its initial screen and closing old tabs before kiosk use.
+
+## Pull backups
+
+Pull downloads the new file before changing the active configuration. When `~/digidisplay.json` already exists, it is first renamed using the local date and time:
 
 ```text
-https://www.undologic.com/en/pages/screen
+~/digidisplay-2026_08_16_10_02_11.json
 ```
 
-After setup, reboot the device. Firefox should open automatically in kiosk mode.
+Backups are not automatically deleted. Two pulls in the same second may overwrite the backup sharing that timestamp.
 
-## Manual steps
-- First firefox start you need to click continue
-- Then close and reopen and you need to close the open previous tabs
-
-The setup automatically sets **Dim automatically** and **Turn off screen** to **Never** for AC, battery, and low-battery power states.
-
-## Local Runtime (Docker)
-
-Local mode runs a configured application repository with Docker Compose. Docker ships with Aurora DX; if it is not yet available, switch to Aurora DX with:
+To use a different endpoint or config path:
 
 ```bash
-ujust devmode
+DIGIDISPLAY_CONFIG_ENDPOINT=https://example.test/configure just digidisplay-pull 123
+DIGIDISPLAY_CONFIG=/path/device.json just digidisplay-apply
 ```
-
-This rebases the system to Aurora DX and reboots. After it completes, run:
-
-```bash
-ujust dx-group
-```
-
-This adds the current user to the `docker` group so Docker can run without `sudo`. Log out and back in for the group change to take effect, then confirm Docker is available:
-
-```bash
-docker --version
-docker compose version
-```
-
-Run `just digidisplay` and select `local`. Setup asks for the Git repository, branch, deployment path, Compose directory, optional SSH deploy key, health URL, and browser URL. On launch, DigiDisplay clones a missing repository, starts Compose, waits for the health URL, and then opens Firefox.
-
-Ordinary launches never fetch or pull an existing local repository. Application code changes only when an administrator runs:
-
-```bash
-just digidisplay-update
-```
-
-The update must be a clean fast-forward. It recreates containers without deleting volumes, checks application health, and restarts the kiosk.
-
-## Update an Existing Installation
-
-To download the latest version of the project later:
-
-```bash
-cd ~/digi-display
-git pull
-just digidisplay
-```
-
-The local display configuration in `~/digidisplay.json` is not stored in the repository and can be edited independently.
-
-## Commands
-
-```bash
-just digidisplay
-just digidisplay-status
-just digidisplay-cancel
-just digidisplay-run
-just digidisplay-launch
-just digidisplay-update
-just digidisplay-tailscale
-just digidisplay-activate-rdp
-just digidisplay-activate-ssh
-```
-
-`just digidisplay` configures the kiosk.
-
-`just digidisplay-status` shows the config, systemd user service state, and recent service logs.
-
-`just digidisplay-cancel` stops the kiosk service and kills Firefox if it is still running, logging whether it had to do so — useful confirmation when run over SSH.
-
-`just digidisplay-run` starts the kiosk service (the opposite of `digidisplay-cancel`). Meant to be run over SSH: it starts `digidisplay.service` via `systemctl --user`, so Firefox opens on the physical display, not the SSH session.
-
-`just digidisplay-launch` starts the kiosk manually in the foreground for troubleshooting.
-
-`just digidisplay-update` explicitly updates and restarts a configured local-mode application.
-
-`just digidisplay-tailscale` helps enable Tailscale after it is installed.
-
-`just digidisplay-activate-rdp` fixes KRDP login failing right after credentials are entered, caused by an SELinux/`NoNewPrivileges` conflict on ostree-based images. This is also offered as a setup question during `just digidisplay`.
-
-`just digidisplay-activate-ssh` enables and starts `sshd.service` for remote maintenance access (`ssh user@host`). This is also offered as a setup question during `just digidisplay`, and the choice is recorded in `remote_admin.ssh`.
-
-`just digidisplay` also asks for a hostname, applied via `hostnamectl` so the device is identifiable on the network.
 
 ## Configuration
 
-The active config is stored at:
-
-```text
-~/digidisplay.json
-```
-
-Example:
+Cloud example:
 
 ```json
 {
   "version": 1,
+  "group_id": false,
   "hostname": "digidisplay-lobby",
   "mode": "cloud",
   "url": "https://www.undologic.com/en/pages/screen",
   "kiosk": true,
   "wait_for_network": true,
   "restart_browser": true,
+  "autologin": true,
+  "reboot_after_apply": false,
   "virtual_keyboard": {
     "always_show": false
   },
   "remote_admin": {
     "tailscale": false,
     "ssh": false,
+    "rdp": false,
     "nomachine": false
   },
   "update": {
@@ -157,16 +111,49 @@ Example:
 }
 ```
 
-Local mode adds a `local` object:
+`remote_admin.ssh`, `remote_admin.rdp`, and `autologin` currently have one-way behavior. `true` enables/configures the feature; `false` does not remove a feature that was enabled previously.
+
+`group_id: false` means the device is unassigned or locally managed. A positive integer identifies the Digi-Display server group used to retrieve a managed configuration.
+
+## Local runtime (Docker)
+
+Local mode runs an application repository with Docker Compose. Docker ships with Aurora DX. If it is unavailable, switch to Aurora DX and add the current user to the Docker group:
+
+```bash
+ujust devmode
+ujust dx-group
+```
+
+Log out and back in after changing Docker-group membership, then confirm:
+
+```bash
+docker --version
+docker compose version
+```
+
+Local example:
 
 ```json
 {
   "version": 1,
+  "group_id": false,
+  "hostname": "digidisplay-local",
   "mode": "local",
   "url": "http://localhost",
   "kiosk": true,
   "wait_for_network": false,
   "restart_browser": true,
+  "autologin": true,
+  "reboot_after_apply": false,
+  "virtual_keyboard": {
+    "always_show": false
+  },
+  "remote_admin": {
+    "tailscale": false,
+    "ssh": false,
+    "rdp": false,
+    "nomachine": false
+  },
   "local": {
     "repository": "git@github.com:example/private-project.git",
     "branch": "main",
@@ -181,25 +168,83 @@ Local mode adds a `local` object:
 }
 ```
 
-Private key contents must not be placed in this file; `ssh_key` is only a path. Edit the configuration, then reboot or restart the user service:
+Top-level `url` is what Firefox opens. `local.health_url` is the application readiness check. `local.docker_path` is relative to `local.project_path`.
+
+Private-key contents must not be placed in this file; `local.ssh_key` is only a path. For SSH repositories, connect to the Git host once as the DigiDisplay user so its host key is present in `~/.ssh/known_hosts`.
+
+On launch, DigiDisplay clones a missing repository, starts Compose, waits for the health URL, and opens Firefox. Ordinary launch/apply never updates an existing checkout. Update it explicitly with:
 
 ```bash
-systemctl --user restart digidisplay.service
+just digidisplay-update
 ```
 
-For SSH repositories, connect to the Git host once as the DigiDisplay user before unattended startup so its host key is present in `~/.ssh/known_hosts`.
+The update requires a clean fast-forward, recreates containers without deleting volumes, checks application health, and restarts the kiosk.
+
+## Commands
+
+```bash
+just digidisplay-pull [group_id]
+just digidisplay-apply
+just digidisplay-status
+just digidisplay-cancel
+just digidisplay-run
+just digidisplay-launch
+just digidisplay-update
+just digidisplay-tailscale
+just digidisplay-activate-rdp
+just digidisplay-activate-ssh
+```
+
+- `digidisplay-pull` downloads a configuration and backs up the old local file.
+- `digidisplay-apply` applies the local JSON and starts/restarts the kiosk.
+- `digidisplay-status` shows config, service state, and recent logs.
+- `digidisplay-cancel` stops the kiosk and closes Firefox.
+- `digidisplay-run` starts the kiosk service from an SSH session.
+- `digidisplay-launch` runs the kiosk in the foreground for troubleshooting.
+- `digidisplay-update` explicitly updates a local-mode application.
+- `digidisplay-tailscale` helps enable Tailscale separately.
+- `digidisplay-activate-rdp` applies the KRDP SELinux/systemd fix directly.
+- `digidisplay-activate-ssh` enables the SSH server directly.
+
+## Updating DigiDisplay itself
+
+```bash
+cd ~/digi-display
+git pull
+just digidisplay-apply
+```
+
+The active configuration and timestamped backups are stored outside the repository.
+
+## Recovery
+
+Restart the kiosk after a manual JSON edit:
+
+```bash
+just digidisplay-apply
+```
+
+Inspect status and logs:
+
+```bash
+just digidisplay-status
+journalctl --user -u digidisplay.service -n 100 --no-pager
+```
+
+Restore a pull backup by copying the desired timestamped file over `~/digidisplay.json`, reviewing it, and applying it again.
 
 ## Files
 
 ```text
 config/digidisplay.json.example
 config/firefox/user.js
-docs/features/aurora-ujust.md
+docs/features/digi-display-config-pull-apply-codex.md
 docs/install/aurora-dx.md
 docs/recovery/kiosk.md
+scripts/digidisplay-apply
+scripts/digidisplay-pull
 scripts/digidisplay-activate-rdp
 scripts/digidisplay-activate-ssh
-scripts/digidisplay-bootstrap
 scripts/digidisplay-cancel
 scripts/digidisplay-launch
 scripts/digidisplay-run
@@ -208,25 +253,14 @@ scripts/digidisplay-tailscale
 scripts/digidisplay-update
 scripts/lib/digidisplay-local-runtime
 systemd/digidisplay-user.service
-tests/digidisplay-runtime-test
 ```
+
+## Troubleshooting
+
+If the screen keeps turning off, confirm Plasma's dim and turn-off settings are set to Never. `digidisplay-apply` attempts to set those values for AC, battery, and low-battery profiles.
+
+If the virtual keyboard is not working, set `virtual_keyboard.always_show` to `true`, run `just digidisplay-apply`, and confirm Plasma Keyboard is installed and selected under System Settings → Keyboard → Virtual Keyboard.
 
 ## License
 
 DigiDisplay is licensed under the Apache License 2.0. See `LICENSE` and `NOTICE`.
-
-
-
-
-
-## Troubleshooting
-The screen keeps turning off
-- Ensure the "Dim Automatically" is set to never
-- Also Ensure "Turn Off Screen" is set to never
-
-The virtual keyboard is not working
-- System Settings → Keyboard → Virtual Keyboard
-- Select Plasma Keyboard. > Top right > Set Show Virtual Keyboard to With Touch, Tablet, and Mouse.
-- Click Apply.
-
-You can also rerun `just digidisplay` and enable the on-screen keyboard when prompted.

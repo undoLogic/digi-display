@@ -1,6 +1,6 @@
-# Aurora DX Install Notes
+# Aurora DX install notes
 
-These notes describe the manual cloud and local-mode install path.
+These notes describe the cloud and local-mode MVP install path.
 
 ## Requirements
 
@@ -12,40 +12,55 @@ These notes describe the manual cloud and local-mode install path.
 - `just` (included with Aurora DX)
 - Local mode only: `git`, `curl`, Docker, and Docker Compose
 
-## Install
-
-Clone the repository and run:
+## Install the repository
 
 ```bash
-just digidisplay
+cd ~
+git clone https://github.com/undoLogic/digi-display.git digi-display
+cd ~/digi-display
 ```
 
-The setup will:
+There is no interactive setup. All settings come from `~/digidisplay.json`.
 
-- Check the current operating system
-- Ask for cloud or local deployment mode
-- Ask for the display URL and local Git/Docker settings when applicable
-- Ask whether the on-screen keyboard should appear for every selected text field
-- Write `~/digidisplay.json`
-- Prepare a dedicated Firefox profile
-- Install a systemd user service
-- Set automatic display dimming and screen turn-off to Never for every power state
-- Offer desktop autologin for the current user (sddm or plasmalogin, whichever is active)
-- Offer to reboot
+## Get a configuration
 
-## Re-Run Setup
-
-Run setup again to change kiosk options:
+Pull the default/unassigned configuration:
 
 ```bash
-just digidisplay
+just digidisplay-pull
 ```
 
-Re-running setup updates the config and service file. It should not create duplicate services.
+Or pull a managed group:
 
-## Start Manually
+```bash
+just digidisplay-pull 123
+```
 
-For troubleshooting:
+For a device that should not contact the Digi-Display server, copy the example:
+
+```bash
+cp config/digidisplay.json.example ~/digidisplay.json
+```
+
+Review the JSON:
+
+```bash
+nano ~/digidisplay.json
+```
+
+## Apply
+
+```bash
+just digidisplay-apply
+```
+
+Apply validates the file, configures the Aurora desktop and hostname, installs the Firefox profile and systemd user service, applies enabled SSH/RDP/autologin settings, and starts the kiosk. Set `reboot_after_apply` to `true` when apply should reboot after completing successfully.
+
+Re-run `just digidisplay-apply` after changing setup values in the JSON.
+
+## Start manually
+
+For foreground troubleshooting:
 
 ```bash
 just digidisplay-launch
@@ -53,7 +68,7 @@ just digidisplay-launch
 
 In local mode, the first launch clones the configured application if it is missing. Later launches use the existing checkout without pulling changes.
 
-## Update A Local Application
+## Update a local application
 
 ```bash
 just digidisplay-update
@@ -61,7 +76,7 @@ just digidisplay-update
 
 This is the only DigiDisplay command that fetches application code. It requires a clean checkout, performs a fast-forward update, recreates containers without deleting volumes, verifies the health URL, and restarts the kiosk.
 
-## Check Status
+## Check status
 
 ```bash
 just digidisplay-status
@@ -71,12 +86,8 @@ This shows the active config, service state, and recent logs.
 
 ## Tailscale
 
-Remote access is opt-in.
-
-After Tailscale is installed, run:
+Tailscale remains opt-in and separate from config pull/apply:
 
 ```bash
 just digidisplay-tailscale
 ```
-
-The command enables `tailscaled` and can run `sudo tailscale up`. It does not change firewall rules.
