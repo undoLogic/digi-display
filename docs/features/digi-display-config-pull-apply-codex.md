@@ -135,11 +135,11 @@ Top-level `url` is always the URL opened by Firefox. In local mode, `local.healt
 
 `local.ssh_key` is a path to a key already installed on the device. Never put private-key contents, passwords, or tokens in this JSON.
 
-## All current setup questions move to JSON
+## All previous setup questions move to JSON
 
-`digidisplay-apply` must not ask the existing configuration questions. Every current answer comes from the local JSON:
+`digidisplay-apply` must not ask configuration questions. Every value previously collected by the interactive setup comes from the local JSON:
 
-| Current setup question | JSON field |
+| Previous setup question | JSON field |
 | --- | --- |
 | Hostname | `hostname` |
 | Deployment mode | `mode` |
@@ -171,7 +171,16 @@ For an existing version-1 file that does not contain the new fields, use these i
 }
 ```
 
-The retained interactive `just digidisplay` command may continue temporarily, but it must write these fields and should share the same apply functions.
+The interactive setup is removed completely for the MVP. There is no compatibility wizard, prompt wrapper, or second configuration path. Administrators either pull a configuration or create/edit `~/digidisplay.json`, then run `just digidisplay-apply`.
+
+For a new local-only device, the manual starting point is:
+
+```bash
+cp ~/digi-display/config/digidisplay.json.example ~/digidisplay.json
+nano ~/digidisplay.json
+cd ~/digi-display
+just digidisplay-apply
+```
 
 ## Simple timestamped backups
 
@@ -265,7 +274,9 @@ Do not rewrite or normalize the JSON during apply. Missing newly added fields us
 
 ### Apply flow
 
-Reuse the existing bootstrap functions rather than building a second implementation. After basic validation:
+`scripts/digidisplay-apply` becomes the one configuration/setup implementation. Move the useful noninteractive operations from `scripts/digidisplay-bootstrap` into this script, then remove the old bootstrap script and its prompt helpers. Do not keep a second shared bootstrap workflow or preserve the step-by-step questions.
+
+After basic validation, `digidisplay-apply` performs:
 
 1. Configure `hostname`.
 2. Enable SSH when `remote_admin.ssh` is `true`.
@@ -325,12 +336,14 @@ Local edits are not uploaded and the next successful pull replaces them after ma
 ### Aurora client repository
 
 1. Add `scripts/digidisplay-pull` and its optional group argument in the `justfile`.
-2. Add `scripts/digidisplay-apply` and its `justfile` recipe.
-3. Reuse/extract current bootstrap functions needed by apply.
-4. Add the new JSON fields to `config/digidisplay.json.example` and the retained interactive writer.
-5. Add the simple timestamped backup behavior when a script replaces an existing config.
-6. Update README command/configuration documentation after the commands work.
-7. Preserve all existing runtime commands and local-mode behavior.
+2. Create `scripts/digidisplay-apply` and its `justfile` recipe as the only configuration/setup path.
+3. Move the useful machine-configuration functions from `scripts/digidisplay-bootstrap` into `scripts/digidisplay-apply`.
+4. Remove all question/prompt, interactive config-writing, and interactive reboot code.
+5. Remove `scripts/digidisplay-bootstrap` and the old `just digidisplay` recipe after its required apply logic has moved.
+6. Add the new JSON fields to `config/digidisplay.json.example`.
+7. Add the simple timestamped backup behavior when pull replaces an existing config.
+8. Update README command/configuration documentation and remove interactive setup instructions.
+9. Preserve the other existing runtime commands and local-mode behavior.
 
 ### UpdateCase/Digi-Display server repository
 
