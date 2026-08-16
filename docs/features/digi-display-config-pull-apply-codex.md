@@ -90,12 +90,15 @@ A complete cloud configuration is:
   "kiosk": true,
   "wait_for_network": true,
   "restart_browser": true,
+  "autologin": true,
+  "reboot_after_apply": false,
   "virtual_keyboard": {
     "always_show": false
   },
   "remote_admin": {
     "tailscale": false,
     "ssh": false,
+    "rdp": false,
     "nomachine": false
   },
   "update": {
@@ -116,12 +119,15 @@ A complete local/Docker configuration is:
   "kiosk": true,
   "wait_for_network": false,
   "restart_browser": true,
+  "autologin": true,
+  "reboot_after_apply": false,
   "virtual_keyboard": {
     "always_show": false
   },
   "remote_admin": {
     "tailscale": false,
     "ssh": false,
+    "rdp": false,
     "nomachine": false
   },
   "local": {
@@ -154,17 +160,46 @@ Existing installed version-1 files predate this field. For backward compatibilit
 
 Adding this optional field does not require a schema version bump because it is metadata and does not change existing runtime field meanings.
 
-### Existing fields that are not fully declarative
+Existing version-1 files also predate `autologin`, `remote_admin.rdp`, and `reboot_after_apply`. When those fields are missing, `digidisplay-apply` must safely normalize them to `false`. This preserves the machine's existing state because false values use the one-way, no-action semantics below. Newly created, downloaded, and example files must contain all three fields explicitly.
+
+### Interactive-question field mapping
+
+Every value currently requested by `scripts/digidisplay-bootstrap` must be represented in the JSON. `digidisplay-apply` must not ask these questions again.
+
+| Current bootstrap question | Version-1 JSON field |
+| --- | --- |
+| Hostname | `hostname` |
+| Deployment mode | `mode` |
+| Git repository | `local.repository` |
+| Git branch | `local.branch` |
+| Local project path | `local.project_path` |
+| Docker Compose directory | `local.docker_path` |
+| SSH private-key path for Git | `local.ssh_key` |
+| Local health URL | `local.health_url` |
+| Display URL | `url` |
+| Launch Firefox in kiosk mode | `kiosk` |
+| Restart Firefox automatically | `restart_browser` |
+| Always show on-screen keyboard | `virtual_keyboard.always_show` |
+| Enable SSH server | `remote_admin.ssh` |
+| Enable desktop autologin | `autologin` |
+| Activate RDP/KRDP SELinux fix | `remote_admin.rdp` |
+| Reboot after successful setup | `reboot_after_apply` |
+
+The current prompt defaults become the defaults written by the legacy interactive path: `autologin: true`, `remote_admin.rdp: false`, and `reboot_after_apply: false`.
+
+`reboot_after_apply` is an explicit action setting. When `true`, every manual invocation of `just digidisplay-apply` reboots after all other apply operations succeed. It does not cause a boot loop because `digidisplay-apply` is not run automatically at startup.
+
+### Fields with one-way activation semantics
 
 The version-1 document contains fields that the current implementation only partially acts on:
 
-- `remote_admin.ssh: true` may enable SSH through the existing activation script. `false` does not currently disable an already enabled SSH service.
+- `remote_admin.ssh: true` enables SSH through the existing activation script. `false` skips SSH activation and does not disable an already enabled SSH service.
+- `remote_admin.rdp: true` applies the existing KRDP SELinux/systemd override. `false` skips RDP activation and does not remove an override that was previously installed.
+- `autologin: true` installs the current DigiDisplay autologin configuration. `false` skips autologin configuration and does not remove an existing DigiDisplay autologin file.
 - `remote_admin.tailscale` and `remote_admin.nomachine` are recorded but are not applied by the bootstrap script.
 - `update.automatic` is currently forced to `false`; automatic application or OS updates are not implemented.
 
-The first `digidisplay-apply` implementation must preserve these semantics. It must not silently add destructive disable behavior or automatic management.
-
-Autologin, RDP activation, and reboot are currently interactive bootstrap choices and are not represented in the JSON. They are outside the first `apply` contract. RDP and SSH continue to have their existing explicit recipes. A later schema revision can make additional provisioning state declarative if required.
+The first `digidisplay-apply` implementation must preserve these one-way semantics. It must not silently add destructive disable behavior. The existing explicit SSH and RDP recipes remain available for manual administration, but normal configuration through `apply` is controlled by the JSON fields above.
 
 ## `digidisplay-pull`
 
@@ -181,7 +216,7 @@ If supplied, the argument must contain ASCII decimal digits and represent a posi
 
 ### Server requests
 
-The proposed endpoint contract is:
+The endpoint contract is:
 
 ```http
 GET /configure
@@ -192,11 +227,11 @@ Accept: application/json
 Examples:
 
 ```text
-https://site2staging.digi-display.com/configure
-https://site2staging.digi-display.com/configure/123
+https://site2.digi-display.com/configure
+https://site2.digi-display.com/configure/123
 ```
 
-The exact route and production base URL must be finalized in the UpdateCase/Digi-Display server repository. They must not be inferred from this client repository. The client implementation should keep the endpoint configurable for staging and tests rather than embedding the example staging hostname throughout the script.
+The production base URL is `https://site2.digi-display.com`. The client should use this as its default while keeping the endpoint configurable for tests and non-production environments.
 
 The CakePHP endpoint is a separate cross-repository prerequisite. It should return one complete version-1 configuration object, not a wrapper object and not a partial patch.
 
@@ -257,9 +292,10 @@ All configuration validation must finish before machine settings are changed. At
 - `hostname` accepted by the current hostname validator.
 - `mode` equal to `cloud` or `local`.
 - `url` beginning with `http://` or `https://`.
-- Boolean values for `kiosk`, `wait_for_network`, and `restart_browser`.
+- Boolean values for `kiosk`, `wait_for_network`, `restart_browser`, `autologin`, and `reboot_after_apply`.
 - `virtual_keyboard.always_show` to be boolean when present.
-- Supported `remote_admin` and `update` values to have the expected types.
+- `remote_admin.tailscale`, `remote_admin.ssh`, `remote_admin.rdp`, and `remote_admin.nomachine` to be boolean when present.
+- Supported `update` values to have the expected types.
 - `update.automatic` to remain `false` until automatic updates are implemented.
 
 For `local` mode, also require:
@@ -281,19 +317,22 @@ Unknown keys may be preserved for forward compatibility, but unknown modes or in
 After successful validation and preflight, `digidisplay-apply` should reuse the existing operations to:
 
 1. Configure the hostname.
-2. Enable SSH only when the existing `remote_admin.ssh` semantics request it.
+2. Enable SSH when `remote_admin.ssh` is `true`.
 3. Install/update the DigiDisplay Firefox profile.
 4. Install/update and enable `digidisplay.service`, including its restart policy from `restart_browser`.
 5. Configure KDE locking and power management.
 6. Configure the Plasma virtual keyboard from `virtual_keyboard.always_show`.
 7. Install/apply the DigiDisplay wallpaper.
-8. Restart an active kiosk service, or start it if it is installed but inactive, so the new configuration becomes active without requiring a reboot.
+8. Configure desktop autologin when `autologin` is `true`.
+9. Apply the existing KRDP SELinux/systemd override when `remote_admin.rdp` is `true`.
+10. Restart an active kiosk service, or start it if it is installed but inactive, so the new configuration becomes active without requiring a reboot.
+11. Reboot only when `reboot_after_apply` is `true` and every preceding step completed successfully.
 
 If local mode is selected, starting the service invokes the already implemented local runtime: clone the repository only when missing, run `docker compose up -d --build`, wait for `local.health_url`, and then open top-level `url`. `apply` must not fetch or update an existing checkout; `just digidisplay-update` remains the explicit update operation.
 
 Validation prevents malformed configuration from causing partial changes. Machine configuration itself is not transactional, so an operational failure after application begins must stop immediately, report which operation failed, and return nonzero. The command must not claim success or hide the failure.
 
-`apply` must not contact the Digi-Display configuration endpoint, change an existing `group_id` (apart from adding `false` to a legacy file where the field is absent), enroll Tailscale, activate RDP, enable automatic polling, push local configuration to the cloud, or reboot the device.
+`apply` must not contact the Digi-Display configuration endpoint, change an existing `group_id` (apart from adding `false` to a legacy file where the field is absent), enroll Tailscale, enable automatic polling, or push local configuration to the cloud. RDP activation and reboot are permitted only when their explicit JSON fields are `true`.
 
 ## Local-only and cloud-managed ownership
 
@@ -351,7 +390,7 @@ Tailscale remains a separate remote-access concern. Do not use Tailscale identit
 - Automatic Aurora OS updates.
 - Updating an existing local application checkout during launch or apply.
 - A new `docker` mode or a second Docker configuration schema.
-- Declarative disabling/removal of SSH, RDP, Tailscale, or NoMachine.
+- Disabling/removing previously enabled SSH, RDP, autologin, Tailscale, or NoMachine state when the corresponding field is `false`; phase 1 preserves the current one-way activation behavior.
 - Moving private keys or other credentials through configuration JSON.
 
 ## Required implementation scope
@@ -361,10 +400,11 @@ Tailscale remains a separate remote-access concern. Do not use Tailscale identit
 1. Add `scripts/digidisplay-pull` and its optional-argument `just` recipe.
 2. Add `scripts/digidisplay-apply` and its `just` recipe.
 3. Extract shared validation/application helpers from the current bootstrap where practical.
-4. Add `group_id: false` to the example configuration and to JSON written by the interactive path.
-5. Preserve `DIGIDISPLAY_CONFIG` support.
-6. Update user documentation after the commands exist.
-7. Keep all existing runtime commands working.
+4. Add `group_id`, `autologin`, `remote_admin.rdp`, and `reboot_after_apply` to the example configuration and to JSON written by the interactive path.
+5. Move every current bootstrap question to its documented JSON field and make `digidisplay-apply` consume those fields without configuration questions.
+6. Preserve `DIGIDISPLAY_CONFIG` support.
+7. Update user documentation after the commands exist.
+8. Keep all existing runtime commands working.
 
 ### UpdateCase/Digi-Display server repository
 
@@ -386,9 +426,14 @@ Before this feature is complete, automated tests should prove:
 - Invalid, zero, negative, extra, and non-integer arguments fail without a request.
 - Network, HTTP, JSON, schema, ID-mismatch, and write failures preserve an existing config byte-for-byte.
 - Pull has no systemd, Firefox, Docker, Git-update, Tailscale, RDP, or reboot side effects.
-- Apply accepts and normalizes a legacy version-1 file with no `group_id`.
+- Apply accepts and safely normalizes a legacy version-1 file with no `group_id`, `autologin`, `remote_admin.rdp`, or `reboot_after_apply`.
 - Apply rejects invalid cloud and local configs before machine mutations.
 - Apply is noninteractive.
+- Every value currently collected by the bootstrap questions is read from its documented JSON field.
+- `autologin: true` installs the current DigiDisplay autologin configuration; `false` does not install it.
+- `remote_admin.rdp: true` runs the existing RDP activation behavior; `false` does not run it.
+- `reboot_after_apply: true` reboots only after a successful apply; `false` never reboots.
+- A failed apply never reaches the configured reboot step.
 - Apply installs/enables the user service and activates the selected URL.
 - Changing `restart_browser` updates the systemd restart policy.
 - Cloud apply does not invoke the local Docker runtime.
@@ -409,10 +454,9 @@ and the same device can still be configured and operated locally without a Digi-
 
 ## Decisions still required before client/server programming
 
-The repository inspection cannot determine these product/server details:
+The repository inspection cannot determine these remaining product/server details:
 
-1. The final CakePHP route and production base URL. The staging URL in this document is illustrative.
-2. The public default URL returned by the no-group endpoint, if it should differ from the current `https://www.undologic.com/en/pages/screen` default.
-3. Which version-1 fields the unauthenticated server is allowed to expose. The response must still be complete enough to pass client validation.
+1. The public default URL returned by the no-group endpoint, if it should differ from the current `https://www.undologic.com/en/pages/screen` default.
+2. Which version-1 fields the unauthenticated server is allowed to expose. The response must still be complete enough to pass client validation.
 
 These decisions do not change the client architecture, but they should be resolved before hard-coding the endpoint contract.
