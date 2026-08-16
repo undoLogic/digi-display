@@ -244,7 +244,7 @@ The group endpoint returns a complete version-1 configuration with its integer `
 The MVP pull implementation should be straightforward:
 
 1. Build the no-group or group URL.
-2. Download it with `curl --fail` to a temporary sibling file such as `~/digidisplay.json.download`.
+2. Download it with `curl --insecure --fail` to a temporary sibling file such as `~/digidisplay.json.download`. Insecure TLS is an explicit temporary MVP choice while the server certificate does not match `site2.digi-display.com`.
 3. If the download fails, leave the active configuration alone and report the error.
 4. If `~/digidisplay.json` exists, rename it to its timestamped backup.
 5. Rename the downloaded file to `~/digidisplay.json`.
@@ -326,7 +326,8 @@ Local edits are not uploaded and the next successful pull replaces them after ma
 ## MVP security boundary
 
 - `group_id` is not authentication and must not be treated as a secret.
-- Use HTTPS and allow normal certificate checking.
+- Use HTTPS, but temporarily disable certificate verification for the MVP because the current certificate does not match `site2.digi-display.com`.
+- Restore normal certificate verification as soon as the server certificate is corrected.
 - Do not return passwords, tokens, private keys, or other secrets.
 - Keep Tailscale enrollment separate.
 - Proper device authentication can be added after the MVP is working.

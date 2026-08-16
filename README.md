@@ -73,6 +73,8 @@ Pull downloads the new file before changing the active configuration. When `~/di
 
 Backups are not automatically deleted. Two pulls in the same second may overwrite the backup sharing that timestamp.
 
+The MVP pull currently disables TLS certificate verification because the certificate served for `site2.digi-display.com` does not match that hostname. This is temporary and should be removed after the server certificate is corrected.
+
 To use a different endpoint or config path:
 
 ```bash

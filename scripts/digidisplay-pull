@@ -50,7 +50,8 @@ main() {
 
   trap cleanup EXIT
   log "Downloading DigiDisplay configuration from $request_url"
-  curl --fail --silent --show-error --location "$request_url" --output "$DOWNLOAD_FILE"
+  log "WARNING: TLS certificate verification is disabled for this MVP pull."
+  curl --insecure --fail --silent --show-error --location "$request_url" --output "$DOWNLOAD_FILE"
 
   if [ -e "$CONFIG_FILE" ]; then
     saved_backup="$(backup_path)"
