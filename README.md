@@ -42,8 +42,10 @@ just digidisplay-pull
 For a self-managed device that should not contact the Digi-Display server:
 
 ```bash
-cp config/digidisplay.json.example ~/digidisplay.json
+just digidisplay-init
 ```
+
+`just digidisplay-init` copies the complete current template from `config/digidisplay.json.example`. Keep that template updated whenever a new configuration variable is added; new initializations will then include it automatically.
 
 Review or edit the file before applying it:
 
@@ -190,6 +192,7 @@ The update requires a clean fast-forward, recreates containers without deleting 
 
 ```bash
 just digidisplay-pull [group_id]
+just digidisplay-init
 just digidisplay-apply
 just digidisplay-status
 just digidisplay-cancel
@@ -202,6 +205,7 @@ just digidisplay-activate-ssh
 ```
 
 - `digidisplay-pull` downloads a configuration and backs up the old local file.
+- `digidisplay-init` creates a new `~/digidisplay.json` from the current configuration template. It will not overwrite an existing file.
 - `digidisplay-apply` applies the local JSON and starts/restarts the kiosk.
 - `digidisplay-status` shows config, service state, and recent logs.
 - `digidisplay-cancel` stops the kiosk and closes Firefox.
@@ -252,6 +256,7 @@ scripts/digidisplay-pull
 scripts/digidisplay-activate-rdp
 scripts/digidisplay-activate-ssh
 scripts/digidisplay-cancel
+scripts/digidisplay-init
 scripts/digidisplay-launch
 scripts/digidisplay-run
 scripts/digidisplay-status

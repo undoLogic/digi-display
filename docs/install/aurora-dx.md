@@ -39,7 +39,7 @@ just digidisplay-pull 123
 For a device that should not contact the Digi-Display server, copy the example:
 
 ```bash
-cp config/digidisplay.json.example ~/digidisplay.json
+just digidisplay-init
 ```
 
 Review the JSON:

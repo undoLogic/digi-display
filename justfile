@@ -6,6 +6,9 @@ _default:
 digidisplay-pull group_id="":
     @bash scripts/digidisplay-pull {{quote(group_id)}}
 
+digidisplay-init:
+    @bash scripts/digidisplay-init
+
 digidisplay-apply:
     @bash scripts/digidisplay-apply
 

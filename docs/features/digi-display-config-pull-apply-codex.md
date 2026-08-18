@@ -175,12 +175,12 @@ For an existing version-1 file that does not contain the new fields, use these i
 }
 ```
 
-The interactive setup is removed completely for the MVP. There is no compatibility wizard, prompt wrapper, or second configuration path. Administrators either pull a configuration or create/edit `~/digidisplay.json`, then run `just digidisplay-apply`.
+The interactive setup is removed completely for the MVP. There is no compatibility wizard, prompt wrapper, or second configuration path. Administrators either pull a configuration, run `just digidisplay-init` for a current local template, or edit `~/digidisplay.json`, then run `just digidisplay-apply`.
 
 For a new local-only device, the manual starting point is:
 
 ```bash
-cp ~/digi-display/config/digidisplay.json.example ~/digidisplay.json
+just digidisplay-init
 nano ~/digidisplay.json
 cd ~/digi-display
 just digidisplay-apply
