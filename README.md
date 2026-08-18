@@ -98,6 +98,7 @@ Cloud example:
   "restart_browser": true,
   "autologin": true,
   "reboot_after_apply": false,
+  "hide_menu": true,
   "virtual_keyboard": {
     "always_show": false
   },
@@ -114,6 +115,8 @@ Cloud example:
 ```
 
 `remote_admin.ssh`, `remote_admin.rdp`, and `autologin` currently have one-way behavior. `true` enables/configures the feature; `false` does not remove a feature that was enabled previously.
+
+`hide_menu` defaults to `true`. When enabled, Aurora's bottom Plasma menu auto-hides and appears when the mouse reaches the bottom edge of the screen. Set it to `false` to keep the menu visible, then run `just digidisplay-apply`.
 
 `group_id: false` means the device is unassigned or locally managed. A positive integer identifies the Digi-Display server group used to retrieve a managed configuration.
 
@@ -147,6 +150,7 @@ Local example:
   "restart_browser": true,
   "autologin": true,
   "reboot_after_apply": false,
+  "hide_menu": true,
   "virtual_keyboard": {
     "always_show": false
   },

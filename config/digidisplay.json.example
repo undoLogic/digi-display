@@ -9,6 +9,7 @@
   "restart_browser": true,
   "autologin": true,
   "reboot_after_apply": false,
+  "hide_menu": true,
   "virtual_keyboard": {
     "always_show": false
   },

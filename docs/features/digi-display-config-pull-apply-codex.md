@@ -79,6 +79,7 @@ This is in Aurora's mutable home directory, so the configuration and its backups
   "restart_browser": true,
   "autologin": true,
   "reboot_after_apply": false,
+  "hide_menu": true,
   "virtual_keyboard": {
     "always_show": false
   },
@@ -108,6 +109,7 @@ This is in Aurora's mutable home directory, so the configuration and its backups
   "restart_browser": true,
   "autologin": true,
   "reboot_after_apply": false,
+  "hide_menu": true,
   "virtual_keyboard": {
     "always_show": false
   },
@@ -155,6 +157,7 @@ Top-level `url` is always the URL opened by Firefox. In local mode, `local.healt
 | Always show on-screen keyboard | `virtual_keyboard.always_show` |
 | Enable SSH server | `remote_admin.ssh` |
 | Enable desktop autologin | `autologin` |
+| Hide the Aurora bottom menu until the pointer reaches the bottom edge | `hide_menu` |
 | Activate the RDP/KRDP SELinux fix | `remote_admin.rdp` |
 | Reboot after apply | `reboot_after_apply` |
 
@@ -165,6 +168,7 @@ For an existing version-1 file that does not contain the new fields, use these i
   "group_id": false,
   "autologin": false,
   "reboot_after_apply": false,
+  "hide_menu": true,
   "remote_admin": {
     "rdp": false
   }

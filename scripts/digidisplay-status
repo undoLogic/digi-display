@@ -63,6 +63,7 @@ if [ -f "$CONFIG_FILE" ]; then
   log "SSH enabled by apply: $(json_value "remote_admin.ssh" "false")"
   log "RDP fix enabled by apply: $(json_value "remote_admin.rdp" "false")"
   log "Reboot after apply: $(json_value "reboot_after_apply" "false")"
+  log "Hide Aurora menu: $(json_value "hide_menu" "true")"
   log "Always show virtual keyboard: $(json_value "virtual_keyboard.always_show" "false")"
   if [ "$mode" = "local" ]; then
     log "Repository: $(json_value "local.repository" "not configured")"
