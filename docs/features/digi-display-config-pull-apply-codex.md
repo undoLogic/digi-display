@@ -73,7 +73,7 @@ This is in Aurora's mutable home directory, so the configuration and its backups
   "group_id": false,
   "hostname": "digidisplay",
   "mode": "cloud",
-  "url": "https://www.undologic.com/en/pages/screen",
+  "url": "https://www.digi-display.com/en/Pages/demoSlideshow",
   "kiosk": true,
   "wait_for_network": true,
   "restart_browser": true,

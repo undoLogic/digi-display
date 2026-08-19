@@ -94,7 +94,7 @@ Cloud example:
   "group_id": false,
   "hostname": "digidisplay-lobby",
   "mode": "cloud",
-  "url": "https://www.undologic.com/en/pages/screen",
+  "url": "https://www.digi-display.com/en/Pages/demoSlideshow",
   "kiosk": true,
   "wait_for_network": true,
   "restart_browser": true,
