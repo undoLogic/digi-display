@@ -144,3 +144,35 @@ Start at [docs/README.md](docs/README.md).
 ## License
 
 Apache License 2.0. See `LICENSE` and `NOTICE`.
+
+
+
+
+
+## Troubleshooting
+
+### Trying to connect over RDP starting but failing
+For the previous workaround, it should say NoNewPrivileges=no. yes means the restriction is still enabled.
+
+Check to ensure disabled 
+- If YES, means it is blocked
+```shell
+systemctl --user show app-org.kde.krdpserver.service -p NoNewPrivileges
+```
+
+Run these on the target Aurora computer:
+```shell
+
+
+sudo mkdir -p /etc/systemd/user/app-org.kde.krdpserver.service.d
+
+printf '[Service]\nNoNewPrivileges=false\n' |
+  sudo tee /etc/systemd/user/app-org.kde.krdpserver.service.d/override.conf
+
+systemctl --user daemon-reload
+systemctl --user restart app-org.kde.krdpserver.service
+
+systemctl --user show app-org.kde.krdpserver.service -p NoNewPrivileges
+
+Once it reports no, try RDP again.
+```
