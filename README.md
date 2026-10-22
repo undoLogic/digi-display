@@ -161,6 +161,7 @@ systemctl --user show app-org.kde.krdpserver.service -p NoNewPrivileges
 ```
 
 Run these on the target Aurora computer:
+TODO: This is not surviving a reboot right now
 ```shell
 
 
