@@ -150,8 +150,9 @@ Answers from the review of Claude's open questions, with the author's answer quo
 9. **Troubleshooting commands.** Answer: "SOUNDS GOOD". Keep `launch` and `cancel`, delete `run`, fold `activate-ssh` and `activate-rdp` into `apply`, keep `tailscale` as opt-in.
 10. **Leftover keys.** Answer: "GOOD". Keep `hostname` and `reboot_after_apply`; drop `update.automatic`, `remote_admin.tailscale`, `remote_admin.nomachine`, `group_id`.
 11. **`init` profile.** Answer: "GOOD". `just init [profile] [--advanced]`, default `signage`.
-12. **Agent files.** Answer: "I REMOVED THE BAD ONE AND ONLY THE GOOD ONE REMAINS ALL CAPS". `AGENTS.md` stays as-is. `CLAUDE.md` holds only the three doc-maintenance rules from Notes.
+12. **Agent files.** Answer: "I REMOVED THE BAD ONE AND ONLY THE GOOD ONE REMAINS ALL CAPS". `AGENTS.md` stays as-is. No `CLAUDE.md` (see decision 14).
 13. **`old/` folder.** Answer: "KEEP UNTIL THIS ROUND OF UPDATES IS COMPELTED". Deleted in the final phase, not phase 0.
+14. **No `CLAUDE.md`.** Replaces the `CLAUDE.md` line in Notes > Docs layout. Everything planned for `CLAUDE.md` goes into `docs/README.md` instead, so `AGENTS.md` can reference `docs/README.md` as a company-wide standard across projects. `docs/README.md` holds the docs index (what each file covers) and the maintenance rules: keep the feature docs accurate to the code, put new ideas in the roadmap, record changes in decisions. The author updates `AGENTS.md` to point at it.
 
 ## Implementation plan
 
@@ -225,7 +226,7 @@ Each phase ends with a manual check on a device or VM before the next phase star
 ### Phase 6: Docs
 
 - Rewrite `README.md` to the structure in Notes.
-- Write `docs/overview.md`, `docs/profiles/*.md`, the five `docs/features/*.md` files (each with a `## Testing` section of manual checks), `docs/roadmap.md`, and `CLAUDE.md` (decision 12).
+- Write `docs/overview.md`, `docs/profiles/*.md`, the five `docs/features/*.md` files (each with a `## Testing` section of manual checks), `docs/roadmap.md`, and `docs/README.md` (decision 14).
 - Fold `docs/install/aurora-dx.md` and `docs/recovery/kiosk.md` into the README and the feature docs, then delete them.
 - Check: read on phone; every command and key in the docs exists in the code, and nothing in the code is undocumented.
 
