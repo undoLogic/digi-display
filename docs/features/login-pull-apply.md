@@ -44,7 +44,7 @@ Pull is the only time the box talks to the server; there are no other check-ins.
 
 ## `just apply`
 
-Validates and resolves the config (see `config-schema.md`), then in order:
+Validates and resolves the config (see `config-schema.md`). If any later step needs administrator rights (changing the hostname, SSH, autologin or the RDP fix), it asks for the sudo password straight away, once; sudo remembers it for the rest of apply. Then, in order:
 
 1. Sets the config and backups to mode 600 (the backup folder to 700).
 2. Local mode: checks git, docker, curl and Docker Compose, and installs the deploy key.
@@ -96,6 +96,8 @@ An invalid config stops apply before step 1 changes anything. Apply never contac
 - [ ] `just init bogus` stops with the usage message.
 - [ ] `just apply` on a valid file finishes with "Configuration applied" and the kiosk opens.
 - [ ] `just apply` on invalid JSON stops before changing any setting.
+- [ ] `just apply` with autologin, SSH, RDP or a new hostname asks for the sudo password once, before any other step, and not again later.
+- [ ] `just apply` with none of those never asks for a password.
 
 ### Login and pull
 

@@ -56,6 +56,23 @@ has_kwriteconfig() {
   command -v kwriteconfig6 >/dev/null 2>&1 || command -v kwriteconfig5 >/dev/null 2>&1
 }
 
+# Asks for the sudo password once, at the start, when a later step needs it.
+# sudo then remembers it for the rest of apply.
+request_sudo_if_needed() {
+  local needs_sudo="false"
+
+  if [ -n "$DD_HOSTNAME" ] && [ "$DD_HOSTNAME" != "$(hostname)" ]; then
+    needs_sudo="true"
+  fi
+  [ "$DD_REMOTE_ADMIN_SSH" = "true" ] && needs_sudo="true"
+  [ "$DD_AUTOLOGIN" = "true" ] && needs_sudo="true"
+  [ "$DD_REMOTE_ADMIN_RDP" = "true" ] && needs_sudo="true"
+
+  [ "$needs_sudo" = "true" ] || return 0
+  log "Some settings need administrator rights. Enter your password once."
+  sudo -v || fail "Could not get administrator rights. Nothing was changed."
+}
+
 configure_hostname() {
   [ -n "$DD_HOSTNAME" ] || return 0
   [ "$DD_HOSTNAME" != "$(hostname)" ] || return 0
@@ -253,6 +270,7 @@ main() {
 
   check_environment
   load_settings
+  request_sudo_if_needed
   protect_config_files
   log "Profile: $DD_PROFILE, mode: $DD_MODE"
 
