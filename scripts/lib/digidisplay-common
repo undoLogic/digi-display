@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Shared by every scripts/digidisplay-* command. Source it; do not run it.
+
+REPO_DIR="${DIGIDISPLAY_REPO_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)}"
+CONFIG_FILE="${DIGIDISPLAY_CONFIG:-$HOME/digidisplay.json}"
+CONFIG_LIB="$REPO_DIR/scripts/lib/digidisplay-config"
+SERVER_URL="${DIGIDISPLAY_SERVER:-https://site2.digi-display.com}"
+SERVICE_NAME="digidisplay.service"
+export DIGIDISPLAY_CONFIG="$CONFIG_FILE"
+
+log() {
+  printf '%s\n' "$*"
+}
+
+warn() {
+  printf 'WARNING: %s\n' "$*" >&2
+}
+
+fail() {
+  printf 'ERROR: %s\n' "$*" >&2
+  exit 1
+}
+
+# Sets the DD_* variables from the resolved configuration, or exits on an invalid file.
+load_settings() {
+  local settings
+  settings="$(python3 "$CONFIG_LIB" shell)" || exit 1
+  eval "$settings"
+}
+
+config_get() {
+  python3 "$CONFIG_LIB" get "$1"
+}
+
+# Restricts the active config and every timestamped backup beside it to the owner.
+protect_config_files() {
+  local config_dir config_base
+  config_dir="$(dirname "$CONFIG_FILE")"
+  config_base="$(basename "$CONFIG_FILE" .json)"
+
+  chmod 600 "$CONFIG_FILE"
+  find "$config_dir" -maxdepth 1 -type f -name "$config_base-*.json" -exec chmod 600 {} +
+}

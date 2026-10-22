@@ -1,6 +1,6 @@
 # DigiDisplay Aurora ujust Feature
 
-Status: Superseded by `docs/features/digi-display-config-pull-apply-codex.md`
+> **Superseded.** Kept as history. The current behaviour is described in `docs/features/` and `docs/profiles/`; see `docs/decisions/2026-10-22-profiles-refactor.md`.
 
 This document records the original interactive bootstrap design. The current MVP removes `just digidisplay` and `scripts/digidisplay-bootstrap`; use `just digidisplay-pull` and `just digidisplay-apply` instead. Interactive instructions below are historical and are not current implementation requirements.
 

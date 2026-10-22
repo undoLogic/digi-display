@@ -1,164 +1,102 @@
 #!/usr/bin/env bash
+# Local mode: the app is cloned to ~/digidisplay-webroot and started with the
+# SetupCase Core convention dockerLinux/1startDocker.sh. Source it after
+# digidisplay-common and load_settings.
 
-digidisplay_local_load_config() {
-  LOCAL_REPOSITORY="$(json_value "local.repository" "")"
-  LOCAL_BRANCH="$(json_value "local.branch" "main")"
-  LOCAL_PROJECT_PATH="$(expand_user_path "$(json_value "local.project_path" "")")"
-  LOCAL_DOCKER_PATH="$(json_value "local.docker_path" "")"
-  LOCAL_SSH_KEY="$(expand_user_path "$(json_value "local.ssh_key" "")")"
-  LOCAL_HEALTH_URL="$(json_value "local.health_url" "")"
+WEBROOT_DIR="${DIGIDISPLAY_WEBROOT:-$HOME/digidisplay-webroot}"
+START_SCRIPT_DIR="dockerLinux"
+START_SCRIPT="1startDocker.sh"
+DEPLOY_KEY_FILE="$HOME/.ssh/digidisplay-deploy-key"
 
-  [ -n "$LOCAL_REPOSITORY" ] || fail "Local mode requires local.repository in $CONFIG_FILE."
-  [ -n "$LOCAL_BRANCH" ] || fail "Local mode requires local.branch in $CONFIG_FILE."
-  [ -n "$LOCAL_PROJECT_PATH" ] || fail "Local mode requires local.project_path in $CONFIG_FILE."
-  [ -n "$LOCAL_DOCKER_PATH" ] || fail "Local mode requires local.docker_path in $CONFIG_FILE."
-  [ -n "$LOCAL_HEALTH_URL" ] || fail "Local mode requires local.health_url in $CONFIG_FILE."
+# Writes local.deploy_key to its own file (git needs a file); removes it when the key is not set.
+install_deploy_key() {
+  local deploy_key
+  deploy_key="$(config_get local.deploy_key)"
 
-  case "$LOCAL_HEALTH_URL" in
-    http://*|https://*) ;;
-    *) fail "local.health_url must start with http:// or https://." ;;
-  esac
-
-  case "$LOCAL_DOCKER_PATH" in
-    /*) fail "local.docker_path must be relative to local.project_path." ;;
-  esac
-}
-
-expand_user_path() {
-  local path="$1"
-
-  if [ -z "$path" ]; then
+  if [ -z "$deploy_key" ]; then
+    rm -f -- "$DEPLOY_KEY_FILE"
     return
   fi
 
-  python3 - "$path" <<'PY'
-import os
-import sys
-
-path = os.path.expanduser(sys.argv[1])
-if not os.path.isabs(path):
-    path = os.path.join(os.path.expanduser("~"), path)
-print(os.path.abspath(path))
-PY
+  mkdir -p "$HOME/.ssh"
+  chmod 700 "$HOME/.ssh"
+  (umask 077 && printf '%s\n' "$deploy_key" > "$DEPLOY_KEY_FILE")
+  log "Deploy key installed: $DEPLOY_KEY_FILE"
 }
 
 local_git() {
   local ssh_command
 
-  if [ -z "$LOCAL_SSH_KEY" ]; then
+  if [ ! -f "$DEPLOY_KEY_FILE" ]; then
     git "$@"
     return
   fi
 
-  [ -r "$LOCAL_SSH_KEY" ] || fail "The configured SSH key is not readable: $LOCAL_SSH_KEY"
-  printf -v ssh_command 'ssh -i %q -o IdentitiesOnly=yes -o BatchMode=yes' "$LOCAL_SSH_KEY"
+  printf -v ssh_command 'ssh -i %q -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=accept-new' "$DEPLOY_KEY_FILE"
   GIT_SSH_COMMAND="$ssh_command" git "$@"
 }
 
-local_repository_exists() {
-  [ -d "$LOCAL_PROJECT_PATH/.git" ]
-}
-
 ensure_local_repository() {
-  command -v git >/dev/null 2>&1 || fail "git is required for local mode."
-
-  if local_repository_exists; then
-    log "Using existing local repository: $LOCAL_PROJECT_PATH"
+  if [ -d "$WEBROOT_DIR/.git" ]; then
+    log "Using existing local repository: $WEBROOT_DIR"
     return
   fi
 
-  if [ -e "$LOCAL_PROJECT_PATH" ]; then
-    fail "Local project path exists but is not a Git repository: $LOCAL_PROJECT_PATH"
-  fi
+  [ ! -e "$WEBROOT_DIR" ] || fail "$WEBROOT_DIR exists but is not a Git repository. Move it away and try again."
 
-  log "Cloning $LOCAL_REPOSITORY ($LOCAL_BRANCH) into $LOCAL_PROJECT_PATH"
-  mkdir -p "$(dirname "$LOCAL_PROJECT_PATH")"
-  local_git clone --branch "$LOCAL_BRANCH" --single-branch -- "$LOCAL_REPOSITORY" "$LOCAL_PROJECT_PATH"
+  log "Cloning $DD_LOCAL_REPOSITORY ($DD_LOCAL_BRANCH) into $WEBROOT_DIR"
+  local_git clone --branch "$DD_LOCAL_BRANCH" --single-branch -- "$DD_LOCAL_REPOSITORY" "$WEBROOT_DIR"
 }
 
 update_local_repository() {
-  local current_branch
-
   ensure_local_repository
 
-  if ! local_git -C "$LOCAL_PROJECT_PATH" diff --quiet ||
-    ! local_git -C "$LOCAL_PROJECT_PATH" diff --cached --quiet; then
+  if ! git -C "$WEBROOT_DIR" diff --quiet || ! git -C "$WEBROOT_DIR" diff --cached --quiet; then
     fail "Local repository has tracked changes. Commit or remove them before updating."
   fi
 
-  log "Fetching $LOCAL_BRANCH from $LOCAL_REPOSITORY"
-  local_git -C "$LOCAL_PROJECT_PATH" fetch -- "$LOCAL_REPOSITORY" "$LOCAL_BRANCH"
+  log "Fetching $DD_LOCAL_BRANCH from $DD_LOCAL_REPOSITORY"
+  local_git -C "$WEBROOT_DIR" fetch -- "$DD_LOCAL_REPOSITORY" "$DD_LOCAL_BRANCH"
 
-  current_branch="$(local_git -C "$LOCAL_PROJECT_PATH" branch --show-current)"
-  if [ "$current_branch" != "$LOCAL_BRANCH" ]; then
-    if local_git -C "$LOCAL_PROJECT_PATH" show-ref --verify --quiet "refs/heads/$LOCAL_BRANCH"; then
-      local_git -C "$LOCAL_PROJECT_PATH" checkout "$LOCAL_BRANCH"
+  if [ "$(git -C "$WEBROOT_DIR" branch --show-current)" != "$DD_LOCAL_BRANCH" ]; then
+    if git -C "$WEBROOT_DIR" show-ref --verify --quiet "refs/heads/$DD_LOCAL_BRANCH"; then
+      git -C "$WEBROOT_DIR" checkout "$DD_LOCAL_BRANCH"
     else
-      local_git -C "$LOCAL_PROJECT_PATH" checkout -b "$LOCAL_BRANCH" FETCH_HEAD
+      git -C "$WEBROOT_DIR" checkout -b "$DD_LOCAL_BRANCH" FETCH_HEAD
     fi
   fi
 
-  local_git -C "$LOCAL_PROJECT_PATH" merge --ff-only FETCH_HEAD
-}
-
-local_compose_directory() {
-  python3 - "$LOCAL_PROJECT_PATH" "$LOCAL_DOCKER_PATH" <<'PY'
-import sys
-from pathlib import Path
-
-project = Path(sys.argv[1]).resolve()
-compose = (project / sys.argv[2]).resolve()
-
-try:
-    compose.relative_to(project)
-except ValueError:
-    raise SystemExit("local.docker_path must stay inside local.project_path")
-
-print(compose)
-PY
+  git -C "$WEBROOT_DIR" merge --ff-only FETCH_HEAD
 }
 
 start_local_runtime() {
-  local compose_dir
-  compose_dir="$(local_compose_directory)" || fail "Invalid local.docker_path: $LOCAL_DOCKER_PATH"
+  local script_dir="$WEBROOT_DIR/$START_SCRIPT_DIR"
 
-  [ -d "$compose_dir" ] || fail "Docker Compose directory does not exist: $compose_dir"
-  command -v docker >/dev/null 2>&1 || fail "docker is required for local mode."
-  docker compose version >/dev/null 2>&1 || fail "Docker Compose is not available."
+  [ -f "$script_dir/$START_SCRIPT" ] || fail "Start script not found: $script_dir/$START_SCRIPT. Local projects must provide $START_SCRIPT_DIR/$START_SCRIPT."
 
-  log "Starting local Docker runtime from $compose_dir"
-  (
-    cd "$compose_dir"
-    docker compose up -d --build "$@"
-  )
+  log "Starting local Docker runtime: $script_dir/$START_SCRIPT"
+  (cd "$script_dir" && bash "./$START_SCRIPT")
 }
 
+# Polls the top-level url until the local app answers.
 wait_for_local_health() {
   local attempts="${DIGIDISPLAY_HEALTH_ATTEMPTS:-60}"
   local interval="${DIGIDISPLAY_HEALTH_INTERVAL:-2}"
   local attempt
 
-  command -v curl >/dev/null 2>&1 || fail "curl is required for local mode health checks."
-  [[ "$attempts" =~ ^[1-9][0-9]*$ ]] || fail "DIGIDISPLAY_HEALTH_ATTEMPTS must be a positive integer."
-  [[ "$interval" =~ ^[0-9]+$ ]] || fail "DIGIDISPLAY_HEALTH_INTERVAL must be a non-negative integer."
-
-  log "Waiting for local application: $LOCAL_HEALTH_URL"
+  log "Waiting for local application: $DD_URL"
   for ((attempt = 1; attempt <= attempts; attempt += 1)); do
-    if curl --fail --silent --output /dev/null --max-time 5 "$LOCAL_HEALTH_URL"; then
+    if curl --fail --silent --output /dev/null --max-time 5 "$DD_URL"; then
       log "Local application is ready."
       return
     fi
-
-    if [ "$attempt" -lt "$attempts" ]; then
-      sleep "$interval"
-    fi
+    [ "$attempt" -lt "$attempts" ] && sleep "$interval"
   done
 
-  fail "Local application did not become healthy after $attempts attempts: $LOCAL_HEALTH_URL"
+  fail "Local application did not answer after $attempts attempts: $DD_URL"
 }
 
 prepare_local_runtime() {
-  digidisplay_local_load_config
   ensure_local_repository
   start_local_runtime
   wait_for_local_health

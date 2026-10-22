@@ -1,0 +1,9 @@
+{
+  "kiosk": true,
+  "autologin": false,
+  "restart_browser": true,
+  "hide_menu": true,
+  "virtual_keyboard": "on_touch",
+  "idle_return": 0,
+  "idle_lock_minutes": 10
+}

@@ -1,15 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-SERVICE_NAME="digidisplay.service"
-
-log() {
-  printf '%s\n' "$*"
-}
-
-warn() {
-  printf 'WARNING: %s\n' "$*" >&2
-}
+# shellcheck source=scripts/lib/digidisplay-common
+source "$(dirname "${BASH_SOURCE[0]}")/lib/digidisplay-common"
 
 if command -v systemctl >/dev/null 2>&1; then
   if systemctl --user list-unit-files "$SERVICE_NAME" >/dev/null 2>&1; then

@@ -1,74 +1,54 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-CONFIG_ENDPOINT="${DIGIDISPLAY_CONFIG_ENDPOINT:-https://site2.digi-display.com/configure}"
-CONFIG_FILE="${DIGIDISPLAY_CONFIG:-$HOME/digidisplay.json}"
-DOWNLOAD_FILE="${CONFIG_FILE}.download"
+# shellcheck source=scripts/lib/digidisplay-common
+source "$(dirname "${BASH_SOURCE[0]}")/lib/digidisplay-common"
 
-log() {
-  printf '%s\n' "$*"
-}
-
-fail() {
-  printf 'ERROR: %s\n' "$*" >&2
-  exit 1
-}
+DOWNLOAD_FILE="$CONFIG_FILE.download"
 
 backup_path() {
-  local config_dir
-  local config_name
-  local timestamp
-
-  config_dir="$(dirname "$CONFIG_FILE")"
-  config_name="$(basename "$CONFIG_FILE")"
-  timestamp="$(date '+%Y_%m_%d_%H_%M_%S')"
-
-  if [[ "$config_name" == *.json ]]; then
-    printf '%s/%s-%s.json\n' "$config_dir" "${config_name%.json}" "$timestamp"
-  else
-    printf '%s/%s-%s\n' "$config_dir" "$config_name" "$timestamp"
-  fi
+  printf '%s/%s-%s.json\n' "$(dirname "$CONFIG_FILE")" "$(basename "$CONFIG_FILE" .json)" "$(date '+%Y_%m_%d_%H_%M_%S')"
 }
 
 cleanup() {
   rm -f -- "$DOWNLOAD_FILE"
 }
 
+# The token goes in a header file, not on the command line, so it stays out of the process list.
+download_config() {
+  local token="$1"
+
+  curl --fail --silent --show-error --location \
+    --header @<(printf 'Authorization: Bearer %s\nAccept: application/json\n' "$token") \
+    --output "$DOWNLOAD_FILE" "$SERVER_URL/configure"
+}
+
 main() {
-  local group_id="${1:-}"
-  local request_url="${CONFIG_ENDPOINT%/}"
+  local token
   local saved_backup=""
 
-  [ "$#" -le 1 ] || fail "Usage: just digidisplay-pull [group_id]"
-  if [ -n "$group_id" ]; then
-    [[ "$group_id" =~ ^[1-9][0-9]*$ ]] || fail "group_id must be a positive integer."
-    request_url="$request_url/$group_id"
-  fi
-
+  [ "$#" -eq 0 ] || fail "Usage: just pull"
   command -v curl >/dev/null 2>&1 || fail "curl is required to download the configuration."
-  mkdir -p "$(dirname "$CONFIG_FILE")"
+  [ -f "$CONFIG_FILE" ] || fail "No configuration found. Run 'just login' first."
+  token="$(config_get token)"
+  [ -n "$token" ] || fail "No token in $CONFIG_FILE. Run 'just login' first."
 
   trap cleanup EXIT
-  log "Downloading DigiDisplay configuration from $request_url"
-  log "WARNING: TLS certificate verification is disabled for this MVP pull."
-  curl --insecure --fail --silent --show-error --location "$request_url" --output "$DOWNLOAD_FILE"
+  log "Downloading configuration from $SERVER_URL/configure"
+  (umask 077 && download_config "$token")
+  python3 -c 'import json, sys; json.load(open(sys.argv[1]))' "$DOWNLOAD_FILE" 2>/dev/null \
+    || fail "The server response was not valid JSON. The current configuration was not changed."
 
-  if [ -e "$CONFIG_FILE" ]; then
-    saved_backup="$(backup_path)"
-    mv -f -- "$CONFIG_FILE" "$saved_backup"
-    log "Backup: $saved_backup"
-  fi
-
-  if ! mv -f -- "$DOWNLOAD_FILE" "$CONFIG_FILE"; then
-    if [ -n "$saved_backup" ]; then
-      fail "Could not install the downloaded configuration. The previous file is available at $saved_backup"
-    fi
-    fail "Could not install the downloaded configuration at $CONFIG_FILE"
-  fi
-
+  saved_backup="$(backup_path)"
+  mv -f -- "$CONFIG_FILE" "$saved_backup"
+  mv -f -- "$DOWNLOAD_FILE" "$CONFIG_FILE" \
+    || fail "Could not install the downloaded configuration. The previous file is at $saved_backup"
   trap - EXIT
+  protect_config_files
+
+  log "Backup: $saved_backup"
   log "Configuration saved: $CONFIG_FILE"
-  log "Run: just digidisplay-apply"
+  log "Run: just apply"
 }
 
 main "$@"

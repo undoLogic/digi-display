@@ -1,0 +1,239 @@
+#!/usr/bin/env python3
+"""Resolve ~/digidisplay.json into final settings.
+
+Order: built-in defaults, then the profile file, then mode defaults, then
+every key written in the JSON (an override always wins).
+
+Usage:
+  digidisplay-config shell                  validated settings as DD_* shell variables
+  digidisplay-config explain                table of settings and where each came from
+  digidisplay-config template PROFILE [--advanced]
+                                            a new config as JSON
+  digidisplay-config get KEY                one raw value, without validation
+  digidisplay-config set-token              store the token read from stdin
+"""
+
+import json
+import os
+import re
+import shlex
+import sys
+from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
+
+REPO_DIR = Path(__file__).resolve().parents[2]
+PROFILE_DIR = REPO_DIR / "config" / "profiles"
+CONFIG_FILE = Path(os.environ.get("DIGIDISPLAY_CONFIG", Path.home() / "digidisplay.json"))
+
+PROFILES = ("signage", "terminal", "workstation")
+MODES = ("cloud", "local")
+DEMO_URL = "https://www.digi-display.com/en/Pages/demoSlideshow"
+LOCAL_URL = "http://localhost"
+HOSTNAME_RE = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?")
+
+# Every supported key, in the order init --advanced writes them.
+SCHEMA = {
+    "profile": ("enum", PROFILES),
+    "mode": ("enum", MODES),
+    "url": ("url", None),
+    "hostname": ("hostname", None),
+    "kiosk": ("bool", None),
+    "autologin": ("bool", None),
+    "restart_browser": ("bool", None),
+    "wait_for_network": ("bool", None),
+    "hide_menu": ("bool", None),
+    "virtual_keyboard": ("enum", ("off", "on_touch", "always")),
+    "idle_return": ("seconds", None),
+    "idle_lock_minutes": ("seconds", None),
+    "remote_admin.ssh": ("bool", None),
+    "remote_admin.rdp": ("bool", None),
+    "reboot_after_apply": ("bool", None),
+    "token": ("secret", None),
+    "local.repository": ("string", None),
+    "local.branch": ("string", None),
+    "local.deploy_key": ("secret", None),
+}
+
+BUILT_IN = {
+    "hostname": "",
+    "remote_admin.ssh": False,
+    "remote_admin.rdp": False,
+    "reboot_after_apply": False,
+    "token": "",
+    "local.repository": "",
+    "local.branch": "main",
+    "local.deploy_key": "",
+}
+
+
+class ConfigError(Exception):
+    pass
+
+
+def flatten(data, prefix=""):
+    flat = {}
+    for key, value in data.items():
+        name = prefix + key
+        if isinstance(value, dict):
+            flat.update(flatten(value, name + "."))
+        else:
+            flat[name] = value
+    return flat
+
+
+def nest(flat):
+    data = {}
+    for name, value in flat.items():
+        node = data
+        *parents, leaf = name.split(".")
+        for part in parents:
+            node = node.setdefault(part, {})
+        node[leaf] = value
+    return data
+
+
+def read_config():
+    try:
+        data = json.loads(CONFIG_FILE.read_text())
+    except FileNotFoundError:
+        raise ConfigError(f"Configuration file was not found: {CONFIG_FILE}. Run 'just init' or 'just login'.")
+    except (OSError, json.JSONDecodeError) as error:
+        raise ConfigError(f"Could not read valid JSON from {CONFIG_FILE}: {error}")
+    if not isinstance(data, dict):
+        raise ConfigError("The configuration must be a JSON object.")
+    return data
+
+
+def load_profile(profile):
+    return json.loads((PROFILE_DIR / f"{profile}.json").read_text())
+
+
+def resolve(data):
+    """Return {key: (value, source)} for every key in SCHEMA."""
+    written = flatten(data)
+    unknown = sorted(set(written) - set(SCHEMA))
+    if unknown:
+        raise ConfigError(f"Unknown key(s): {', '.join(unknown)}. See docs/features/config-schema.md.")
+
+    profile = written.get("profile")
+    mode = written.get("mode")
+    if profile not in PROFILES:
+        raise ConfigError(f"profile must be one of: {', '.join(PROFILES)}.")
+    if mode not in MODES:
+        raise ConfigError(f"mode must be one of: {', '.join(MODES)}.")
+
+    settings = {key: (value, "default") for key, value in BUILT_IN.items()}
+    settings.update({key: (value, f"profile:{profile}") for key, value in load_profile(profile).items()})
+    settings["url"] = (DEMO_URL if mode == "cloud" else LOCAL_URL, f"mode:{mode}")
+    settings["wait_for_network"] = (mode == "cloud", f"mode:{mode}")
+    settings.update({key: (value, "config") for key, value in written.items()})
+
+    for key, (value, _source) in settings.items():
+        validate(key, value)
+    if mode == "local" and not settings["local.repository"][0]:
+        raise ConfigError("local.repository is required in local mode.")
+    return {key: settings[key] for key in SCHEMA}
+
+
+def validate(key, value):
+    kind, choices = SCHEMA[key]
+    if kind == "enum" and value not in choices:
+        raise ConfigError(f"{key} must be one of: {', '.join(choices)}.")
+    if kind == "bool" and not isinstance(value, bool):
+        raise ConfigError(f"{key} must be true or false.")
+    if kind == "seconds" and (type(value) is not int or value < 0):
+        raise ConfigError(f"{key} must be a whole number, 0 or more (0 = disabled).")
+    if kind in ("string", "secret", "url", "hostname") and not isinstance(value, str):
+        raise ConfigError(f"{key} must be a string.")
+    if kind == "url" and not value.startswith(("http://", "https://")):
+        raise ConfigError(f"{key} must start with http:// or https://.")
+    if kind == "hostname" and value and not HOSTNAME_RE.fullmatch(value):
+        raise ConfigError(f"{key} must be 1-63 letters, digits, or hyphens and cannot start or end with a hyphen.")
+
+
+def launch_url(url, idle_return):
+    if not idle_return:
+        return url
+    parts = urlsplit(url)
+    query = f"{parts.query}&idle_return={idle_return}" if parts.query else f"idle_return={idle_return}"
+    return urlunsplit(parts._replace(query=query))
+
+
+def shell_value(value):
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)
+
+
+def command_shell():
+    settings = resolve(read_config())
+    for key, (value, _source) in settings.items():
+        if SCHEMA[key][0] == "secret":
+            continue
+        print(f"DD_{key.replace('.', '_').upper()}={shlex.quote(shell_value(value))}")
+    url = settings["url"][0]
+    print(f"DD_LAUNCH_URL={shlex.quote(launch_url(url, settings['idle_return'][0]))}")
+
+
+def command_explain():
+    settings = resolve(read_config())
+    width = max(len(key) for key in settings)
+    print(f"{'Setting'.ljust(width)}  {'Value'.ljust(52)}  Source")
+    for key, (value, source) in settings.items():
+        if SCHEMA[key][0] == "secret":
+            shown = "(set)" if value else "(not set)"
+        else:
+            shown = shell_value(value) or "(not set)"
+        print(f"{key.ljust(width)}  {shown.ljust(52)}  {source}")
+
+
+def command_template(profile, advanced):
+    if profile not in PROFILES:
+        raise ConfigError(f"profile must be one of: {', '.join(PROFILES)}.")
+    basic = {"profile": profile, "mode": "cloud", "url": DEMO_URL}
+    if not advanced:
+        return print(json.dumps(basic, indent=2))
+    settings = resolve(basic)
+    print(json.dumps(nest({key: value for key, (value, _source) in settings.items()}), indent=2))
+
+
+def command_get(key):
+    value = flatten(read_config()).get(key, "")
+    print(shell_value(value))
+
+
+def command_set_token():
+    token = sys.stdin.read().strip()
+    if not token:
+        raise ConfigError("No token was given.")
+    data = read_config() if CONFIG_FILE.exists() else {}
+    data["token"] = token
+    old_umask = os.umask(0o077)
+    try:
+        CONFIG_FILE.write_text(json.dumps(data, indent=2) + "\n")
+    finally:
+        os.umask(old_umask)
+    CONFIG_FILE.chmod(0o600)
+
+
+def main(args):
+    if args[:1] == ["shell"]:
+        command_shell()
+    elif args[:1] == ["explain"]:
+        command_explain()
+    elif args[:1] == ["template"] and len(args) in (2, 3):
+        command_template(args[1], args[2:] == ["--advanced"])
+    elif args[:1] == ["get"] and len(args) == 2:
+        command_get(args[1])
+    elif args == ["set-token"]:
+        command_set_token()
+    else:
+        raise ConfigError(__doc__.strip())
+
+
+if __name__ == "__main__":
+    try:
+        main(sys.argv[1:])
+    except ConfigError as error:
+        print(f"ERROR: {error}", file=sys.stderr)
+        sys.exit(1)

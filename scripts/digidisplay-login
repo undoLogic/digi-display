@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# shellcheck source=scripts/lib/digidisplay-common
+source "$(dirname "${BASH_SOURCE[0]}")/lib/digidisplay-common"
+
+# Sends the credentials on stdin so the password never appears in the process list.
+request_token() {
+  local email="$1"
+  local password="$2"
+
+  python3 -c 'import json, sys; print(json.dumps({"email": sys.argv[1], "password": sys.stdin.read().rstrip("\n")}))' "$email" <<< "$password" \
+    | curl --fail --silent --show-error \
+        --header "Content-Type: application/json" \
+        --header "Accept: application/json" \
+        --data @- "$SERVER_URL/loginDigiDisplay" \
+    | python3 -c 'import json, sys; print(json.load(sys.stdin).get("token") or "")'
+}
+
+main() {
+  local email
+  local password
+  local token
+
+  command -v curl >/dev/null 2>&1 || fail "curl is required to log in."
+
+  read -r -p "DigiDisplay email: " email
+  read -r -s -p "Password: " password
+  printf '\n'
+  [ -n "$email" ] && [ -n "$password" ] || fail "Email and password are required."
+
+  token="$(request_token "$email" "$password")" || fail "Login failed."
+  [ -n "$token" ] || fail "The server did not return a token."
+
+  python3 "$CONFIG_LIB" set-token <<< "$token"
+  log "Logged in. Token saved to $CONFIG_FILE."
+
+  bash "$REPO_DIR/scripts/digidisplay-pull"
+}
+
+main "$@"

@@ -1,34 +1,33 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-CONFIG_FILE="${DIGIDISPLAY_CONFIG:-$HOME/digidisplay.json}"
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
-CONFIG_TEMPLATE="$REPO_DIR/config/digidisplay.json.example"
+# shellcheck source=scripts/lib/digidisplay-common
+source "$(dirname "${BASH_SOURCE[0]}")/lib/digidisplay-common"
 
-log() {
-  printf '%s\n' "$*"
+usage() {
+  fail "Usage: just init [signage|terminal|workstation] [--advanced]"
 }
 
-fail() {
-  printf 'ERROR: %s\n' "$*" >&2
-  exit 1
+main() {
+  local profile="signage"
+  local advanced=()
+  local arg
+
+  for arg in "$@"; do
+    case "$arg" in
+      --advanced) advanced=(--advanced) ;;
+      signage|terminal|workstation) profile="$arg" ;;
+      *) usage ;;
+    esac
+  done
+
+  [ ! -e "$CONFIG_FILE" ] || fail "Configuration already exists: $CONFIG_FILE. Edit it, or move it away before running init again."
+
+  mkdir -p "$(dirname "$CONFIG_FILE")"
+  (umask 077 && python3 "$CONFIG_LIB" template "$profile" "${advanced[@]}" > "$CONFIG_FILE")
+
+  log "Created $CONFIG_FILE ($profile profile)."
+  log "Review it, then run: just apply"
 }
 
-[ -f "$CONFIG_TEMPLATE" ] || fail "Configuration template was not found: $CONFIG_TEMPLATE"
-[ ! -e "$CONFIG_FILE" ] || fail "Configuration already exists: $CONFIG_FILE. Edit it or back it up before retrying."
-
-python3 - "$CONFIG_TEMPLATE" <<'PY'
-import json
-import sys
-
-with open(sys.argv[1]) as config_file:
-    config = json.load(config_file)
-
-if not isinstance(config, dict):
-    raise SystemExit("The configuration template must contain a JSON object.")
-PY
-
-mkdir -p "$(dirname "$CONFIG_FILE")"
-cp -- "$CONFIG_TEMPLATE" "$CONFIG_FILE"
-log "Created DigiDisplay configuration: $CONFIG_FILE"
-log "Edit the file, then run 'just digidisplay-apply'."
+main "$@"

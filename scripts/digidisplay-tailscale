@@ -1,18 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-log() {
-  printf '%s\n' "$*"
-}
-
-warn() {
-  printf 'WARNING: %s\n' "$*" >&2
-}
-
-fail() {
-  printf 'ERROR: %s\n' "$*" >&2
-  exit 1
-}
+# shellcheck source=scripts/lib/digidisplay-common
+source "$(dirname "${BASH_SOURCE[0]}")/lib/digidisplay-common"
 
 yes_no() {
   local prompt="$1"
@@ -40,7 +30,7 @@ install_hint() {
   log
   log "Install Tailscale using the current upstream instructions, then rerun:"
   log
-  log "  just digidisplay-tailscale"
+  log "  just tailscale"
   log
   log "Docs: https://tailscale.com/download/linux"
 }

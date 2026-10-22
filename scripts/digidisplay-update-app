@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# shellcheck source=scripts/lib/digidisplay-common
+source "$(dirname "${BASH_SOURCE[0]}")/lib/digidisplay-common"
+# shellcheck source=scripts/lib/digidisplay-local-runtime
+source "$REPO_DIR/scripts/lib/digidisplay-local-runtime"
+
+close_kiosk() {
+  systemctl --user stop "$SERVICE_NAME" 2>/dev/null || true
+  pkill -x firefox 2>/dev/null || true
+}
+
+update_failed() {
+  local status="$?"
+  trap - ERR
+  warn "The update failed. The kiosk has been left closed so it does not show an unhealthy application."
+  exit "$status"
+}
+
+main() {
+  load_settings
+  [ "$DD_MODE" = "local" ] || fail "update-app is only available when mode is local."
+
+  close_kiosk
+  trap update_failed ERR
+
+  update_local_repository
+  start_local_runtime
+  wait_for_local_health
+  systemctl --user start "$SERVICE_NAME"
+
+  trap - ERR
+  log "DigiDisplay app update complete."
+}
+
+main "$@"

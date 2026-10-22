@@ -3,38 +3,38 @@ set shell := ["bash", "-uc"]
 _default:
     @just --list
 
-digidisplay-pull group_id="":
-    @bash scripts/digidisplay-pull {{quote(group_id)}}
+# Create a basic local config: just init [signage|terminal|workstation] [--advanced]
+init *args:
+    @bash scripts/digidisplay-init {{args}}
 
-digidisplay-init:
-    @bash scripts/digidisplay-init
+# Log in to DigiDisplay cloud, save the device token, then pull
+login:
+    @bash scripts/digidisplay-login
 
-digidisplay-apply:
+# Re-fetch this device's config from the cloud (overwrites local edits; keeps a backup)
+pull:
+    @bash scripts/digidisplay-pull
+
+# Make this device match the config
+apply:
     @bash scripts/digidisplay-apply
 
-digidisplay-status:
+# Show final settings, where each came from, and the kiosk logs
+status:
     @bash scripts/digidisplay-status
 
-digidisplay-cancel:
-    @bash scripts/digidisplay-cancel
+# Update the local-mode Docker app (never runs automatically)
+update-app:
+    @bash scripts/digidisplay-update-app
 
-digidisplay-run:
-    @bash scripts/digidisplay-run
-
-digidisplay-launch:
+# Troubleshooting: run the kiosk in the foreground
+launch:
     @bash scripts/digidisplay-launch
 
-digidisplay-update:
-    @bash scripts/digidisplay-update
+# Troubleshooting: stop the kiosk and close Firefox
+cancel:
+    @bash scripts/digidisplay-cancel
 
-digidisplay-tailscale:
+# Optional: enable Tailscale remote access
+tailscale:
     @bash scripts/digidisplay-tailscale
-
-digidisplay-activate-rdp:
-    @bash scripts/digidisplay-activate-rdp
-
-digidisplay-activate-ssh:
-    @bash scripts/digidisplay-activate-ssh
-
-test:
-    @bash tests/digidisplay-runtime-test

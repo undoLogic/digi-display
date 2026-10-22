@@ -1,69 +1,15 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-DEFAULT_URL="https://www.digi-display.com/en/Pages/demoSlideshow"
-REPO_DIR="${DIGIDISPLAY_REPO_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)}"
-CONFIG_FILE="${DIGIDISPLAY_CONFIG:-$HOME/digidisplay.json}"
+# shellcheck source=scripts/lib/digidisplay-common
+source "$(dirname "${BASH_SOURCE[0]}")/lib/digidisplay-common"
+# shellcheck source=scripts/lib/digidisplay-local-runtime
+source "$REPO_DIR/scripts/lib/digidisplay-local-runtime"
+
 DEFAULT_PROFILE_DIR="$HOME/.local/share/digidisplay/firefox-profile"
 FLATPAK_PROFILE_DIR="$HOME/.var/app/org.mozilla.firefox/digidisplay-profile"
 PROFILE_DIR="${DIGIDISPLAY_FIREFOX_PROFILE:-$DEFAULT_PROFILE_DIR}"
 FIREFOX_PREFS_SOURCE="$REPO_DIR/config/firefox/user.js"
-LOCAL_RUNTIME_LIB="$REPO_DIR/scripts/lib/digidisplay-local-runtime"
-
-log() {
-  printf '%s\n' "$*"
-}
-
-warn() {
-  printf 'WARNING: %s\n' "$*" >&2
-}
-
-fail() {
-  printf 'ERROR: %s\n' "$*" >&2
-  exit 1
-}
-
-json_value() {
-  local key="$1"
-  local fallback="$2"
-
-  if [ ! -f "$CONFIG_FILE" ]; then
-    printf '%s\n' "$fallback"
-    return
-  fi
-
-  python3 - "$CONFIG_FILE" "$key" "$fallback" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-config_path = Path(sys.argv[1])
-key = sys.argv[2]
-fallback = sys.argv[3]
-
-try:
-    data = json.loads(config_path.read_text())
-except Exception:
-    print(fallback)
-    raise SystemExit
-
-value = data
-for part in key.split("."):
-    if not isinstance(value, dict) or part not in value:
-        value = fallback
-        break
-    value = value[part]
-if value is None:
-    value = fallback
-if isinstance(value, bool):
-    print("true" if value else "false")
-else:
-    print(value)
-PY
-}
-
-# shellcheck source=scripts/lib/digidisplay-local-runtime
-source "$LOCAL_RUNTIME_LIB"
 
 firefox_command() {
   if command -v firefox >/dev/null 2>&1; then
@@ -144,28 +90,19 @@ close_existing_firefox() {
 }
 
 main() {
-  local mode
   local url
-  local kiosk
-  local wait_network
   local command_name
 
-  mode="$(json_value "mode" "cloud")"
-  url="$(json_value "url" "$DEFAULT_URL")"
-  kiosk="$(json_value "kiosk" "true")"
-  wait_network="$(json_value "wait_for_network" "true")"
+  load_settings
+  url="$DD_LAUNCH_URL"
 
-  case "$mode" in
-    cloud) ;;
-    local)
-      prepare_local_runtime
-      ;;
-    *) fail "Unsupported DigiDisplay mode '$mode'. Expected 'cloud' or 'local'." ;;
-  esac
+  if [ "$DD_MODE" = "local" ]; then
+    prepare_local_runtime
+  fi
 
   wait_for_graphical_session
   disable_display_blanking
-  wait_for_network "$wait_network"
+  wait_for_network "$DD_WAIT_FOR_NETWORK"
   prepare_firefox_profile
   close_existing_firefox
 
@@ -182,14 +119,14 @@ main() {
   log "Launching DigiDisplay: $url"
 
   if [ "$command_name" = "flatpak" ]; then
-    if [ "$kiosk" = "true" ]; then
+    if [ "$DD_KIOSK" = "true" ]; then
       exec flatpak run org.mozilla.firefox --no-remote --new-instance --profile "$PROFILE_DIR" --kiosk "$url"
     fi
 
     exec flatpak run org.mozilla.firefox --no-remote --new-instance --profile "$PROFILE_DIR" "$url"
   fi
 
-  if [ "$kiosk" = "true" ]; then
+  if [ "$DD_KIOSK" = "true" ]; then
     exec firefox --no-remote --new-instance --profile "$PROFILE_DIR" --kiosk "$url"
   fi
 

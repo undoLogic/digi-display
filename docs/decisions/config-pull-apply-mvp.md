@@ -1,5 +1,7 @@
 # DigiDisplay configuration pull/apply MVP
 
+> **Superseded.** Kept as history. The current behaviour is described in `docs/features/` and `docs/profiles/`; see `docs/decisions/2026-10-22-profiles-refactor.md`.
+
 ## Purpose
 
 This is the MVP specification for replacing the current question-driven DigiDisplay setup with a simple JSON workflow:

@@ -1,5 +1,7 @@
 # DigiDisplay — Local Docker Offline Mode
 
+> **Superseded.** Kept as history. The current behaviour is described in `docs/features/` and `docs/profiles/`; see `docs/decisions/2026-10-22-profiles-refactor.md`.
+
 ## Purpose
 
 This document defines the Phase 2 local/offline runtime feature and records the implemented behavior.
