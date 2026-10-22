@@ -36,6 +36,34 @@ show_path() {
   printf '%s' "$path"
 }
 
+# Explains a failed server request. Never pass a response that contains a token.
+explain_http_failure() {
+  local url="$1"
+  local code="$2"
+  local redirect="$3"
+  local body_file="$4"
+
+  warn "Request: POST $url"
+  warn "HTTP status: $code"
+  [ -z "$redirect" ] || warn "Redirected to: $redirect"
+  if [ -s "$body_file" ]; then
+    warn "Server response (first 500 characters):"
+    head -c 500 "$body_file" >&2
+    printf '\n' >&2
+  fi
+
+  case "$code" in
+    000) warn "Hint: no response. Check the network, DNS, and the server's TLS certificate (curl's message is above)." ;;
+    30?) warn "Hint: the server redirected instead of answering. POST routes must answer directly; check the route (for example a language prefix) and DIGIDISPLAY_SERVER." ;;
+    400) warn "Hint: the server rejected the request body. Check the JSON fields it expects." ;;
+    401) warn "Hint: the server rejected the email and password, or the token. For a token, run 'just login' again on this server." ;;
+    403) warn "Hint: forbidden. Check that CSRF protection is skipped for this route and that it is public (no session needed)." ;;
+    404) warn "Hint: this route does not exist on $SERVER_URL. Check the server code is deployed there, and that DIGIDISPLAY_SERVER is right (production or staging)." ;;
+    405) warn "Hint: the route exists but does not accept POST." ;;
+    5??) warn "Hint: server error. Check the server's error log." ;;
+  esac
+}
+
 # Sets the DD_* variables from the resolved configuration, or exits on an invalid file.
 load_settings() {
   local settings

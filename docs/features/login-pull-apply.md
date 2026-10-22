@@ -32,6 +32,8 @@ The commands are separate on purpose: `pull` only downloads, and `apply` only re
 1. Reads `token` from the config. Without one it stops and says to run `just login`.
 2. Sends `POST /digiDisplayConfigure` with `Authorization: Bearer <token>` and the box's current hostname as JSON. TLS is verified; there is no `--insecure`.
 3. If the download fails or is not valid JSON, the active file is left unchanged.
+
+When `login` or `pull` fails, it prints the server, the full URL, the HTTP status, any redirect target, the first 500 characters of the server's response, and a hint for common statuses (000, 30x, 400, 401, 403, 404, 405, 5xx). The password and token are never printed.
 4. Moves the current file to `~/digidisplay-backups/digidisplay-YYYY_MM_DD_HH_MM_SS.json`, then saves the download as `~/digidisplay.json`.
 
 Pull **overwrites all local edits**. The backup is the only copy of the local version. Backups are never deleted automatically; two pulls in the same second share a backup name.

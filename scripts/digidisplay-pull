@@ -5,6 +5,7 @@ set -Eeuo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib/digidisplay-common"
 
 DOWNLOAD_FILE="$CONFIG_FILE.download"
+PULL_URL="$SERVER_URL/digiDisplayConfigure"
 
 backup_path() {
   printf '%s/%s-%s.json\n' "$BACKUP_DIR" "$(basename "$CONFIG_FILE" .json)" "$(date '+%Y_%m_%d_%H_%M_%S')"
@@ -19,10 +20,22 @@ cleanup() {
 download_config() {
   local token="$1"
 
-  python3 -c 'import json, sys; print(json.dumps({"hostname": sys.argv[1]}))' "$(hostname)" \
-    | curl --fail --silent --show-error \
+  local result
+  local code
+  local redirect
+
+  result="$(python3 -c 'import json, sys; print(json.dumps({"hostname": sys.argv[1]}))' "$(hostname)" \
+    | curl --silent --show-error \
         --header @<(printf 'Authorization: Bearer %s\nAccept: application/json\nContent-Type: application/json\n' "$token") \
-        --data @- --output "$DOWNLOAD_FILE" "$SERVER_URL/digiDisplayConfigure"
+        --output "$DOWNLOAD_FILE" --write-out '%{http_code} %{redirect_url}' \
+        --data @- "$PULL_URL")" || true
+  code="${result%% *}"
+  redirect="${result#* }"
+
+  if [[ "$code" != 2?? ]]; then
+    explain_http_failure "$PULL_URL" "$code" "$redirect" "$DOWNLOAD_FILE"
+    return 1
+  fi
 }
 
 main() {
@@ -36,8 +49,9 @@ main() {
   [ -n "$token" ] || fail "No token in $(show_path "$CONFIG_FILE"). Run 'just login' first."
 
   trap cleanup EXIT
-  log "Downloading configuration from $SERVER_URL/digiDisplayConfigure"
-  (umask 077 && download_config "$token")
+  log "Cloud server: $SERVER_URL"
+  log "Downloading configuration: POST $PULL_URL"
+  (umask 077 && download_config "$token") || fail "Pull failed. The current configuration was not changed."
   python3 -c 'import json, sys; json.load(open(sys.argv[1]))' "$DOWNLOAD_FILE" 2>/dev/null \
     || fail "The server response was not valid JSON. The current configuration was not changed."
 

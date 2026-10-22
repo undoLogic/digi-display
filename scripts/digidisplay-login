@@ -4,36 +4,65 @@ set -Eeuo pipefail
 # shellcheck source=scripts/lib/digidisplay-common
 source "$(dirname "${BASH_SOURCE[0]}")/lib/digidisplay-common"
 
+LOGIN_URL="$SERVER_URL/digiDisplayLogin"
+RESPONSE_FILE=""
+TOKEN=""
+
+cleanup() {
+  [ -z "$RESPONSE_FILE" ] || rm -f -- "$RESPONSE_FILE"
+}
+
 # Sends the credentials on stdin so the password never appears in the process list.
 # The current hostname lets the server label this box in DigiDisplay Actives.
+# Sets TOKEN on success; explains the failure otherwise.
 request_token() {
   local email="$1"
   local password="$2"
+  local result
+  local code
+  local redirect
 
-  python3 -c 'import json, sys; print(json.dumps({"email": sys.argv[1], "password": sys.stdin.read().rstrip("\n"), "hostname": sys.argv[2]}))' "$email" "$(hostname)" <<< "$password" \
-    | curl --fail --silent --show-error \
+  RESPONSE_FILE="$(mktemp)"
+  result="$(python3 -c 'import json, sys; print(json.dumps({"email": sys.argv[1], "password": sys.stdin.read().rstrip("\n"), "hostname": sys.argv[2]}))' "$email" "$(hostname)" <<< "$password" \
+    | curl --silent --show-error \
         --header "Content-Type: application/json" \
         --header "Accept: application/json" \
-        --data @- "$SERVER_URL/digiDisplayLogin" \
-    | python3 -c 'import json, sys; print(json.load(sys.stdin).get("token") or "")'
+        --output "$RESPONSE_FILE" --write-out '%{http_code} %{redirect_url}' \
+        --data @- "$LOGIN_URL")" || true
+  code="${result%% *}"
+  redirect="${result#* }"
+
+  if [[ "$code" != 2?? ]]; then
+    explain_http_failure "$LOGIN_URL" "$code" "$redirect" "$RESPONSE_FILE"
+    return 1
+  fi
+
+  TOKEN="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1])).get("token") or "")' "$RESPONSE_FILE" 2>/dev/null)" || TOKEN=""
+  if [ -z "$TOKEN" ]; then
+    warn "HTTP status: $code, but the response has no \"token\" field. Expected: {\"token\": \"...\"}"
+    explain_http_failure "$LOGIN_URL" "$code" "$redirect" "$RESPONSE_FILE"
+    return 1
+  fi
 }
 
 main() {
   local email
   local password
-  local token
 
   command -v curl >/dev/null 2>&1 || fail "curl is required to log in."
+  trap cleanup EXIT
 
+  log "Cloud server: $SERVER_URL (set DIGIDISPLAY_SERVER to production, staging, or a URL)"
+  log "This box: $(hostname)"
   read -r -p "DigiDisplay email: " email
   read -r -s -p "Password: " password
   printf '\n'
   [ -n "$email" ] && [ -n "$password" ] || fail "Email and password are required."
 
-  token="$(request_token "$email" "$password")" || fail "Login failed."
-  [ -n "$token" ] || fail "The server did not return a token."
+  log "Logging in: POST $LOGIN_URL"
+  request_token "$email" "$password" || fail "Login failed."
 
-  python3 "$CONFIG_LIB" set-token <<< "$token"
+  python3 "$CONFIG_LIB" set-token <<< "$TOKEN"
   log "Logged in. Token saved to $(show_path "$CONFIG_FILE")."
 
   bash "$REPO_DIR/scripts/digidisplay-pull"
