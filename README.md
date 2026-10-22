@@ -10,24 +10,24 @@ DigiDisplay is open core. This client is free (Apache 2.0). DigiDisplay cloud (m
 
 ## Feature status
 
-| Feature | Status |
-| --- | --- |
-| Cloud mode: Firefox kiosk opens configured URL | Built |
-| Kiosk auto-start, browser auto-restart, screen never sleeps | Built |
-| `init` basic config | Built |
-| `init --advanced` (all keys) | Built |
-| `apply` | Built |
-| `status` shows final settings and their source | Built |
-| Profiles: signage, terminal, workstation defaults with overrides | Built |
-| Signage profile | Built |
-| Interactive terminal: on-screen keyboard on touch | Built |
+| Feature | Status  |
+| --- |---------|
+| Cloud mode: Firefox kiosk opens configured URL | Tested  |
+| Kiosk auto-start, browser auto-restart, screen never sleeps | Built   |
+| `init` basic config | Built   |
+| `init --advanced` (all keys) | Built   |
+| `apply` | Built   |
+| `status` shows final settings and their source | Built   |
+| Profiles: signage, terminal, workstation defaults with overrides | Built   |
+| Signage profile | Built   |
+| Interactive terminal: on-screen keyboard on touch | Built   |
 | Interactive terminal: idle return to home after 90s | Planned |
-| Secure workstation: Linux login, idle screen lock | Built |
-| `login` (CLI auth, per-box token) | Built |
-| `pull` (config with box's own token, hostname reported) | Built |
-| Timestamped config backups, owner-only permissions | Built |
-| Local mode: clone to `~/digidisplay-webroot`, run Docker Linux script | Built |
-| `update-app` (explicit local app update) | Built |
+| Secure workstation: Linux login, idle screen lock | Built   |
+| `login` (CLI auth, per-box token) | Built   |
+| `pull` (config with box's own token, hostname reported) | Built   |
+| Timestamped config backups, owner-only permissions | Built   |
+| Local mode: clone to `~/digidisplay-webroot`, run Docker Linux script | Built   |
+| `update-app` (explicit local app update) | Built   |
 
 **Status key:** 
 Tested = passed the fresh-VM checklist. 

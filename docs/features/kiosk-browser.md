@@ -13,7 +13,7 @@ How `apply` and the kiosk service turn the Aurora desktop into a single-page app
 ## Firefox
 
 - Uses its own profile (`~/.local/share/digidisplay/firefox-profile`, or the Flatpak equivalent) with the preferences in `config/firefox/user.js`: no first-run, session-restore, password or update prompts.
-- `kiosk: true` opens with `--kiosk`. Firefox (system or Flatpak) must already be installed; the very first start may need its welcome screen accepted once.
+- `kiosk: true` opens with `--kiosk`. Firefox (system or Flatpak) must already be installed. The welcome, privacy-notice and terms-of-use screens are turned off in the kiosk profile; other Firefox profiles on the box still show them.
 - The launch URL is `url`, plus `idle_return=<seconds>` when `idle_return` is above 0.
 
 ## Desktop settings
