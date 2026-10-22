@@ -141,11 +141,11 @@ Answers from the review of Claude's open questions, with the author's answer quo
 
 1. **Command names.** Short names inside the repo folder: `just init`, `just login`, `just pull`, `just apply`, `just status`, `just launch`, `just cancel`, `just tailscale`. `update` becomes `just update-app`, because `ujust update` updates Aurora itself. `just` only reads the repo's `justfile`, so there is no clash with `ujust`; the README quick start always starts with `cd ~/digi-display`.
 2. **`version` key.** Answer: "GOOD". Dropped.
-3. **Pull overwrites everything.** Answer: "IF THEY PULL IT IS UNDERSTOOD THEY WILL OVERWRITE ALL LOCAL CHANGES". `pull` writes the server response as-is and does not copy anything across. The server response therefore includes the `token` used for the request and the deploy key, so the box can still pull afterwards. *(Claude's reading; confirm.)*
+3. **Pull overwrites everything.** Answer: "IF THEY PULL IT IS UNDERSTOOD THEY WILL OVERWRITE ALL LOCAL CHANGES". `pull` writes the server response as-is and does not copy anything across. Confirmed: the server stores the token with the group's config, so every pulled config already contains `token` (and the deploy key). The first `login` writes the token locally; later pulls bring the same token back down. The token is already visible in the file, so returning it costs little and keeps pull a plain overwrite.
 4. **Login route.** Answer: "USE A DIFFERENT ROUTE /loginDigiDisplay SO IT WILL NOT CONFLICT WITH EXISTING LOGIN SYSTEM". `POST /loginDigiDisplay` with `{email, password}` returns `{token}`. `GET /configure` with `Authorization: Bearer <token>` returns the group's config. The unauthenticated `/configure/{group_id}` route is removed.
 5. **Local Docker convention.** Answer: "/dockerLinux/1startDocker.sh". `apply` and `update-app` run `~/digidisplay-webroot/dockerLinux/1startDocker.sh` from inside `dockerLinux/`. Readiness is checked by polling `url`.
 6. **Workstation profile.** Answer: "NOW - AUTOLOGIN OFF, IDLE LOCK". Implemented now.
-7. **Idle return.** Answer: "MAKE A GET PARAM IN THE ADDRESS BAR THAT WILL BE PASSED INTO THE SITE ?idle_return=1 and this will be build into our website that is the screen". DigiDisplay only adds the parameter to the URL Firefox opens; the website does the reset. The key becomes `idle_return` (true/false), and `launch` appends `idle_return=1` with `?` or `&` as needed. The timeout (90 seconds) lives in the website. *(Claude's reading; confirm, or say if the box should pass the seconds instead, e.g. `idle_return=90`.)*
+7. **Idle return.** Answer: "MAKE A GET PARAM IN THE ADDRESS BAR THAT WILL BE PASSED INTO THE SITE ?idle_return=1 and this will be build into our website that is the screen". DigiDisplay only adds the parameter to the URL Firefox opens; the website does the reset. Confirmed: the box passes the seconds. The key `idle_return` is an integer number of seconds; `0` (the default) means disabled. When it is above 0, `launch` appends `idle_return=<seconds>` (e.g. `idle_return=90`) with `?` or `&` as needed. When it is 0 the parameter is left off.
 8. **Tests.** Answer: "THIS IS MVP NO TESTS - I WILL BE MANUALLY TESTING EVERYTHING MYSELF". Delete `tests/` and the `test` recipe. Feature docs keep `## Testing` sections as manual checks.
 9. **Troubleshooting commands.** Answer: "SOUNDS GOOD". Keep `launch` and `cancel`, delete `run`, fold `activate-ssh` and `activate-rdp` into `apply`, keep `tailscale` as opt-in.
 10. **Leftover keys.** Answer: "GOOD". Keep `hostname` and `reboot_after_apply`; drop `update.automatic`, `remote_admin.tailscale`, `remote_admin.nomachine`, `group_id`.
@@ -181,7 +181,7 @@ Each phase ends with a manual check on a device or VM before the next phase star
 | `wait_for_network` | cloud only | cloud only | cloud only | true in cloud, false in local |
 | `hide_menu` | true | true | true | |
 | `virtual_keyboard` | `off` | `on_touch` | `on_touch` | `off`, `on_touch`, `always`; replaces `virtual_keyboard.always_show` |
-| `idle_return` | false | true | false | new; adds `idle_return=1` to the URL, the website does the reset |
+| `idle_return` | 0 | 90 | 0 | new; seconds, 0 = disabled; adds `idle_return=<seconds>` to the URL, the website does the reset |
 | `idle_lock_minutes` | 0 | 0 | 10 | new; 0 = off |
 | `remote_admin.ssh` | false | false | false | one-way |
 | `remote_admin.rdp` | false | false | false | one-way |
@@ -205,7 +205,7 @@ Each phase ends with a manual check on a device or VM before the next phase star
 
 - Virtual keyboard: `on_touch` maps to Plasma's automatic mode, and `off` leaves no input method set.
 - Idle lock for workstation: KDE screen locker with `idle_lock_minutes`, instead of the current "never lock".
-- Idle return for terminal: `launch` appends `idle_return=1` to `url` (decision 7). The website side is built separately.
+- Idle return for terminal: `launch` appends `idle_return=<seconds>` to `url` when the value is above 0 (decision 7). The website side is built separately.
 - Check: each profile behaves as described in Notes on a touch-capable VM or device.
 
 ### Phase 4: Local mode rewrite
@@ -219,7 +219,7 @@ Each phase ends with a manual check on a device or VM before the next phase star
 
 - `login` asks for the email and a hidden password, calls the server, stores `token`, then runs `pull`.
 - `pull` takes no argument, sends the token, keeps the timestamped backup, writes the server response as-is (decision 3), and drops `--insecure`.
-- Server repo: the device tokens table, `POST /loginDigiDisplay`, and token-scoped `GET /configure` whose response includes `token` and `local.deploy_key`.
+- Server repo: the device tokens table, `POST /loginDigiDisplay`, and token-scoped `GET /configure`. The token is stored with the group's config, so the response includes `token` and `local.deploy_key`.
 - Check: login on a fresh box, change the config in the admin, pull, apply.
 
 ### Phase 6: Docs
