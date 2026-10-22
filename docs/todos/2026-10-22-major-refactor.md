@@ -144,14 +144,14 @@ Proposal by Claude. Answer by number; each has a suggested default in brackets.
 3. IF THEY PULL IT IS UNDERSTOOD THEY WILL OVERWRITE ALL LOCAL CHANGES **Token survives pull.** `pull` replaces the whole file, so the token would be lost unless the server response includes it. Should the server echo the token (and the deploy key) back in the pulled config, or should `pull` copy the local `token` into the new file? [`pull` copies `token` across; the deploy key comes from the server]
 4. USE A DIFFERENT ROUTE /loginDigiDisplay SO IT WILL NOT CONFLICT WITH EXISTING LOGIN SYSTEM **Login API contract.** Proposed: `POST /login` with `{email, password}` returns `{token}`; `GET /configure` with `Authorization: Bearer <token>` returns the group's config. The unauthenticated `/configure` and `/configure/{group_id}` routes are removed. OK, or is this defined in the server repo? [OK as proposed]
 5. /dockerLinux/1startDocker.sh - **Local Docker convention.** What is the exact folder and script name (for example `docker-linux/start.sh`)? Does the health check just poll `url`? [Poll `url`]
-6. **Workstation profile.** Implement it now (autologin off, idle lock), or accept the name but stop with "not available yet" until customers arrive? [Implement now; it is a few defaults]
-7. **Idle return mechanism.** Firefox has no built-in "reset after N seconds idle". Options: a small kiosk WebExtension, or a launch-side idle watcher that restarts Firefox. OK to do a short spike first and report back? [Spike first]
-8. **Tests.** `tests/digidisplay-runtime-test` covers the old schema and will break. Treat this as MVP work (delete it, test manually), or rewrite it against the new schema? [MVP: delete, manual checks in feature docs]
-9. **Troubleshooting commands.** Keep `launch` (foreground) and `cancel`; delete `run` (same as `systemctl --user start`); fold `activate-ssh` and `activate-rdp` into `apply`; keep `tailscale` as an opt-in command? [As listed]
-10. **Leftover keys.** Keep `hostname` (no change when omitted) and `reboot_after_apply`? Drop the unused `update.automatic`, `remote_admin.tailscale`, `remote_admin.nomachine` and `group_id`? [Keep the first two, drop the rest]
-11. **`init` profile.** Should `init` take the profile, e.g. `just init terminal`? [Yes, default `signage`]
-12. **Agent files.** `agents.md` (lowercase, tracked) and `AGENTS.md` (untracked) contain CakePHP/UpdateCase rules that do not apply to this Bash repo. Delete both and keep only the new `CLAUDE.md`? [Yes]
-13. **`old/` folder.** Delete the legacy LXDE/NixOS scripts? Git history keeps them. [Delete]
+6. NOW - AUTOLOGIN OFF, IDLE LOCK **Workstation profile.** Implement it now (autologin off, idle lock), or accept the name but stop with "not available yet" until customers arrive? [Implement now; it is a few defaults]
+7. MAKE A GET PARAM IN THE ADDRESS BAR THAT WILL BE PASSED INTO THE SITE ?idle_return=1 and this will be build into our website that is the screen - **Idle return mechanism.** Firefox has no built-in "reset after N seconds idle". Options: a small kiosk WebExtension, or a launch-side idle watcher that restarts Firefox. OK to do a short spike first and report back? [Spike first]
+8. THIS IS MVP NO TESTS - I WILL BE MANUALLY TESTING EVERYTHING MYSELF **Tests.** `tests/digidisplay-runtime-test` covers the old schema and will break. Treat this as MVP work (delete it, test manually), or rewrite it against the new schema? [MVP: delete, manual checks in feature docs]
+9. SOUNDS GOOD **Troubleshooting commands.** Keep `launch` (foreground) and `cancel`; delete `run` (same as `systemctl --user start`); fold `activate-ssh` and `activate-rdp` into `apply`; keep `tailscale` as an opt-in command? [As listed]
+10. GOOD **Leftover keys.** Keep `hostname` (no change when omitted) and `reboot_after_apply`? Drop the unused `update.automatic`, `remote_admin.tailscale`, `remote_admin.nomachine` and `group_id`? [Keep the first two, drop the rest]
+11. GOOD **`init` profile.** Should `init` take the profile, e.g. `just init terminal`? [Yes, default `signage`]
+12. I REMOVED THE BAD ONE AND ONLY THE GOOD ONE REMAINS ALL CAPS **Agent files.** `agents.md` (lowercase, tracked) and `AGENTS.md` (untracked) contain CakePHP/UpdateCase rules that do not apply to this Bash repo. Delete both and keep only the new `CLAUDE.md`? [Yes]
+13. KEEP UNTIL THIS ROUND OF UPDATES IS COMPELTED **`old/` folder.** Delete the legacy LXDE/NixOS scripts? Git history keeps them. [Delete]
 
 ## Implementation plan (proposed)
 
