@@ -23,20 +23,22 @@ The commands are separate on purpose: `pull` only downloads, and `apply` only re
 ## `just login`
 
 1. Asks for email and password (the password is not shown).
-2. Sends them to `POST /digiDisplayLogin` as JSON on stdin, so the password never appears on the command line.
-3. Stores the returned `token` in `~/digidisplay.json`, creating the file if needed.
+2. Sends them, with the box's current hostname, to `POST /digiDisplayLogin` as JSON on stdin, so the password never appears on the command line. The password is never stored.
+3. Stores the returned `token` in `~/digidisplay.json`, creating the file if needed. Every login creates a new token: one login = one box.
 4. Runs `pull`.
 
 ## `just pull`
 
 1. Reads `token` from the config. Without one it stops and says to run `just login`.
-2. Downloads `GET /digiDisplayConfigure` with `Authorization: Bearer <token>`. TLS is verified; there is no `--insecure`.
+2. Sends `POST /digiDisplayConfigure` with `Authorization: Bearer <token>` and the box's current hostname as JSON. TLS is verified; there is no `--insecure`.
 3. If the download fails or is not valid JSON, the active file is left unchanged.
 4. Moves the current file to `~/digidisplay-backups/digidisplay-YYYY_MM_DD_HH_MM_SS.json`, then saves the download as `~/digidisplay.json`.
 
 Pull **overwrites all local edits**. The backup is the only copy of the local version. Backups are never deleted automatically; two pulls in the same second share a backup name.
 
-The token is stored with the group's config on the server, so every pulled config already contains it, and the box can keep pulling.
+The server writes the requesting box's own token into the config it returns, so the box can keep pulling. Boxes assigned to the same config get identical files except for the token.
+
+Pull is the only time the box talks to the server; there are no other check-ins.
 
 ## `just apply`
 
@@ -60,10 +62,13 @@ An invalid config stops apply before step 1 changes anything. Apply never contac
 
 | Route | Request | Response |
 | --- | --- | --- |
-| `POST /digiDisplayLogin` | JSON `{"email", "password"}` | `{"token": "..."}`; HTTP error on bad credentials |
-| `GET /digiDisplayConfigure` | `Authorization: Bearer <token>` | The group's complete config JSON, including `token` and, for local mode, `local.deploy_key` |
+| `POST /digiDisplayLogin` | JSON `{"email", "password", "hostname"}` | `{"token": "..."}`; HTTP error on bad credentials |
+| `POST /digiDisplayConfigure` | `Authorization: Bearer <token>`; JSON `{"hostname"}` | The assigned config's JSON with the request's `token` inserted, including `local.deploy_key` for local mode |
 
-- A device tokens table links each token to one customer group. A token can only fetch its own group; deleting the token cuts off that box.
+- **Configs** table: the customer's configs; one is the default for new logins. A customer without a config cannot log a box in.
+- **Actives** table: one row per token (token, config_id, hostname, last_pulled_at). A token links to a config, not directly to the customer. Reassigning a box to another config takes effect on its next pull. Deleting the row cuts off only that box.
+- Pull updates the row's hostname and `last_pulled_at`, so it is a POST (state-changing actions are never GET). The server validates the hostname (letters, digits, hyphens) before saving it.
+- The server inserts the token taken from the request, never one stored on the config or group.
 - Both routes start with `digiDisplay` because the same server also runs UpdateCase, so DigiDisplay does not take generic names such as `/login` or `/configure`. `/digiDisplayLogin` is separate from the existing website login.
 - The full server spec is `docs/features/MVP-digiDisplay-login-cloud.md` in the server repo.
 - The server can be changed for testing with `DIGIDISPLAY_SERVER` (default `https://site2.digi-display.com`).
@@ -91,7 +96,7 @@ An invalid config stops apply before step 1 changes anything. Apply never contac
 
 **Surfaces:**
 - `scripts/digidisplay-login`, `scripts/digidisplay-pull`
-- Server: `POST /digiDisplayLogin`, `GET /digiDisplayConfigure`
+- Server: `POST /digiDisplayLogin`, `POST /digiDisplayConfigure`
 
 #### Scenarios
 
@@ -100,5 +105,8 @@ An invalid config stops apply before step 1 changes anything. Apply never contac
 - [ ] `just pull` without a token says to run `just login`.
 - [ ] A `just pull` creates a timestamped backup in `~/digidisplay-backups/` with mode 600, and nothing new appears in `~`.
 - [ ] A failed download leaves the active file unchanged.
-- [ ] After a pull, the new file still contains the token.
+- [ ] After a pull, the new file still contains this box's token.
+- [ ] Two boxes on the same config get identical files apart from `token`.
+- [ ] After a pull, DigiDisplay Actives shows the box's current hostname and pull time.
+- [ ] Logging in a second box creates a second token; revoking one leaves the other working.
 - [ ] The password and token do not appear in `ps` output during login or pull.

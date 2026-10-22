@@ -5,11 +5,12 @@ set -Eeuo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib/digidisplay-common"
 
 # Sends the credentials on stdin so the password never appears in the process list.
+# The current hostname lets the server label this box in DigiDisplay Actives.
 request_token() {
   local email="$1"
   local password="$2"
 
-  python3 -c 'import json, sys; print(json.dumps({"email": sys.argv[1], "password": sys.stdin.read().rstrip("\n")}))' "$email" <<< "$password" \
+  python3 -c 'import json, sys; print(json.dumps({"email": sys.argv[1], "password": sys.stdin.read().rstrip("\n"), "hostname": sys.argv[2]}))' "$email" "$(hostname)" <<< "$password" \
     | curl --fail --silent --show-error \
         --header "Content-Type: application/json" \
         --header "Accept: application/json" \

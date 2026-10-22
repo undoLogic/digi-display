@@ -14,13 +14,15 @@ cleanup() {
   rm -f -- "$DOWNLOAD_FILE"
 }
 
+# POST, because the server records this box's hostname and pull time.
 # The token goes in a header file, not on the command line, so it stays out of the process list.
 download_config() {
   local token="$1"
 
-  curl --fail --silent --show-error --location \
-    --header @<(printf 'Authorization: Bearer %s\nAccept: application/json\n' "$token") \
-    --output "$DOWNLOAD_FILE" "$SERVER_URL/digiDisplayConfigure"
+  python3 -c 'import json, sys; print(json.dumps({"hostname": sys.argv[1]}))' "$(hostname)" \
+    | curl --fail --silent --show-error \
+        --header @<(printf 'Authorization: Bearer %s\nAccept: application/json\nContent-Type: application/json\n' "$token") \
+        --data @- --output "$DOWNLOAD_FILE" "$SERVER_URL/digiDisplayConfigure"
 }
 
 main() {

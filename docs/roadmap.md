@@ -5,7 +5,7 @@ Everything planned but not built. Feature docs describe only what exists; ideas 
 ## Before cloud login goes live
 
 - **Fix the TLS certificate for `site2.digi-display.com`.** `login` and `pull` verify TLS, so they fail until the certificate matches the hostname.
-- **Server side:** device tokens table, `POST /digiDisplayLogin`, token-scoped `GET /digiDisplayConfigure` (see `features/login-pull-apply.md`).
+- **Server side:** device tokens table, `POST /digiDisplayLogin`, token-scoped `POST /digiDisplayConfigure`, Configs and Actives tables (see `features/login-pull-apply.md`).
 - **Website side:** read `idle_return=<seconds>` and reset to the home page after that much idle time.
 
 ## Profiles
@@ -31,7 +31,9 @@ Everything planned but not built. Feature docs describe only what exists; ideas 
 
 ## Managed fleet
 
-- Device heartbeats, screenshots and update reporting to DigiDisplay cloud.
+- Device heartbeats, screenshots and update reporting to DigiDisplay cloud (pull is currently the only check-in).
+- Hostname drift handling (today the latest pulled hostname simply overwrites).
+- Full multi-config UI beyond reassigning boxes.
 
 ## Cleanup after this refactor
 
