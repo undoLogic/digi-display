@@ -135,31 +135,31 @@ Keep one spelling of the name: DigiDisplay in prose, lowercase only in commands 
 - Branded maintenance wallpapers, `digidisplay-doctor`, VM QA checklist
 - Automatic deploy-key registration through the GitHub API
 
-## Open questions
+## Decisions
 
-Proposal by Claude. Answer by number; each has a suggested default in brackets.
+Answers from the review of Claude's open questions, with the author's answer quoted and how the plan applies it.
 
-1. **Command names.** DECIDED: short names inside the repo folder (`just init`, `just login`, `just pull`, `just apply`, `just status`, `just launch`, `just cancel`, `just tailscale`). `update` becomes `just update-app`, because `ujust update` updates Aurora itself and the two are easy to confuse. `just` only reads the repo's `justfile`, so the names do not clash with `ujust` recipes; the README quick start always starts with `cd ~/digi-display`.
-2. GOOD - **`version` key.** The basic config has no `version`. Drop it entirely, since old configs are not supported? [Drop]
-3. IF THEY PULL IT IS UNDERSTOOD THEY WILL OVERWRITE ALL LOCAL CHANGES **Token survives pull.** `pull` replaces the whole file, so the token would be lost unless the server response includes it. Should the server echo the token (and the deploy key) back in the pulled config, or should `pull` copy the local `token` into the new file? [`pull` copies `token` across; the deploy key comes from the server]
-4. USE A DIFFERENT ROUTE /loginDigiDisplay SO IT WILL NOT CONFLICT WITH EXISTING LOGIN SYSTEM **Login API contract.** Proposed: `POST /login` with `{email, password}` returns `{token}`; `GET /configure` with `Authorization: Bearer <token>` returns the group's config. The unauthenticated `/configure` and `/configure/{group_id}` routes are removed. OK, or is this defined in the server repo? [OK as proposed]
-5. /dockerLinux/1startDocker.sh - **Local Docker convention.** What is the exact folder and script name (for example `docker-linux/start.sh`)? Does the health check just poll `url`? [Poll `url`]
-6. NOW - AUTOLOGIN OFF, IDLE LOCK **Workstation profile.** Implement it now (autologin off, idle lock), or accept the name but stop with "not available yet" until customers arrive? [Implement now; it is a few defaults]
-7. MAKE A GET PARAM IN THE ADDRESS BAR THAT WILL BE PASSED INTO THE SITE ?idle_return=1 and this will be build into our website that is the screen - **Idle return mechanism.** Firefox has no built-in "reset after N seconds idle". Options: a small kiosk WebExtension, or a launch-side idle watcher that restarts Firefox. OK to do a short spike first and report back? [Spike first]
-8. THIS IS MVP NO TESTS - I WILL BE MANUALLY TESTING EVERYTHING MYSELF **Tests.** `tests/digidisplay-runtime-test` covers the old schema and will break. Treat this as MVP work (delete it, test manually), or rewrite it against the new schema? [MVP: delete, manual checks in feature docs]
-9. SOUNDS GOOD **Troubleshooting commands.** Keep `launch` (foreground) and `cancel`; delete `run` (same as `systemctl --user start`); fold `activate-ssh` and `activate-rdp` into `apply`; keep `tailscale` as an opt-in command? [As listed]
-10. GOOD **Leftover keys.** Keep `hostname` (no change when omitted) and `reboot_after_apply`? Drop the unused `update.automatic`, `remote_admin.tailscale`, `remote_admin.nomachine` and `group_id`? [Keep the first two, drop the rest]
-11. GOOD **`init` profile.** Should `init` take the profile, e.g. `just init terminal`? [Yes, default `signage`]
-12. I REMOVED THE BAD ONE AND ONLY THE GOOD ONE REMAINS ALL CAPS **Agent files.** `agents.md` (lowercase, tracked) and `AGENTS.md` (untracked) contain CakePHP/UpdateCase rules that do not apply to this Bash repo. Delete both and keep only the new `CLAUDE.md`? [Yes]
-13. KEEP UNTIL THIS ROUND OF UPDATES IS COMPELTED **`old/` folder.** Delete the legacy LXDE/NixOS scripts? Git history keeps them. [Delete]
+1. **Command names.** Short names inside the repo folder: `just init`, `just login`, `just pull`, `just apply`, `just status`, `just launch`, `just cancel`, `just tailscale`. `update` becomes `just update-app`, because `ujust update` updates Aurora itself. `just` only reads the repo's `justfile`, so there is no clash with `ujust`; the README quick start always starts with `cd ~/digi-display`.
+2. **`version` key.** Answer: "GOOD". Dropped.
+3. **Pull overwrites everything.** Answer: "IF THEY PULL IT IS UNDERSTOOD THEY WILL OVERWRITE ALL LOCAL CHANGES". `pull` writes the server response as-is and does not copy anything across. The server response therefore includes the `token` used for the request and the deploy key, so the box can still pull afterwards. *(Claude's reading; confirm.)*
+4. **Login route.** Answer: "USE A DIFFERENT ROUTE /loginDigiDisplay SO IT WILL NOT CONFLICT WITH EXISTING LOGIN SYSTEM". `POST /loginDigiDisplay` with `{email, password}` returns `{token}`. `GET /configure` with `Authorization: Bearer <token>` returns the group's config. The unauthenticated `/configure/{group_id}` route is removed.
+5. **Local Docker convention.** Answer: "/dockerLinux/1startDocker.sh". `apply` and `update-app` run `~/digidisplay-webroot/dockerLinux/1startDocker.sh` from inside `dockerLinux/`. Readiness is checked by polling `url`.
+6. **Workstation profile.** Answer: "NOW - AUTOLOGIN OFF, IDLE LOCK". Implemented now.
+7. **Idle return.** Answer: "MAKE A GET PARAM IN THE ADDRESS BAR THAT WILL BE PASSED INTO THE SITE ?idle_return=1 and this will be build into our website that is the screen". DigiDisplay only adds the parameter to the URL Firefox opens; the website does the reset. The key becomes `idle_return` (true/false), and `launch` appends `idle_return=1` with `?` or `&` as needed. The timeout (90 seconds) lives in the website. *(Claude's reading; confirm, or say if the box should pass the seconds instead, e.g. `idle_return=90`.)*
+8. **Tests.** Answer: "THIS IS MVP NO TESTS - I WILL BE MANUALLY TESTING EVERYTHING MYSELF". Delete `tests/` and the `test` recipe. Feature docs keep `## Testing` sections as manual checks.
+9. **Troubleshooting commands.** Answer: "SOUNDS GOOD". Keep `launch` and `cancel`, delete `run`, fold `activate-ssh` and `activate-rdp` into `apply`, keep `tailscale` as opt-in.
+10. **Leftover keys.** Answer: "GOOD". Keep `hostname` and `reboot_after_apply`; drop `update.automatic`, `remote_admin.tailscale`, `remote_admin.nomachine`, `group_id`.
+11. **`init` profile.** Answer: "GOOD". `just init [profile] [--advanced]`, default `signage`.
+12. **Agent files.** Answer: "I REMOVED THE BAD ONE AND ONLY THE GOOD ONE REMAINS ALL CAPS". `AGENTS.md` stays as-is. `CLAUDE.md` holds only the three doc-maintenance rules from Notes.
+13. **`old/` folder.** Answer: "KEEP UNTIL THIS ROUND OF UPDATES IS COMPELTED". Deleted in the final phase, not phase 0.
 
-## Implementation plan (proposed)
+## Implementation plan
 
 Each phase ends with a manual check on a device or VM before the next phase starts. Phases 1-4 do not need the server; phase 5 is blocked by the TLS certificate.
 
 ### Phase 0: Clean the repo
 
-- Delete `old/`, `config/digidisplay.json.example`, `scripts/digidisplay-run`, `scripts/digidisplay-activate-ssh`, `scripts/digidisplay-activate-rdp` (logic moves into apply), and the agent files per question 12.
+- Delete `config/digidisplay.json.example`, `scripts/digidisplay-run`, `scripts/digidisplay-activate-ssh`, `scripts/digidisplay-activate-rdp` (logic moves into apply), `tests/` and the `test` recipe. `old/` stays until phase 7.
 - Move `docs/features/aurora-ujust.md`, `digi-display-config-pull-apply-codex.md` and `local_docker_offline.md` to `docs/decisions/` as history. Their still-current content is rewritten in phase 6.
 
 ### Phase 1: One config resolver
@@ -181,7 +181,7 @@ Each phase ends with a manual check on a device or VM before the next phase star
 | `wait_for_network` | cloud only | cloud only | cloud only | true in cloud, false in local |
 | `hide_menu` | true | true | true | |
 | `virtual_keyboard` | `off` | `on_touch` | `on_touch` | `off`, `on_touch`, `always`; replaces `virtual_keyboard.always_show` |
-| `idle_return_seconds` | 0 | 90 | 0 | new; 0 = off |
+| `idle_return` | false | true | false | new; adds `idle_return=1` to the URL, the website does the reset |
 | `idle_lock_minutes` | 0 | 0 | 10 | new; 0 = off |
 | `remote_admin.ssh` | false | false | false | one-way |
 | `remote_admin.rdp` | false | false | false | one-way |
@@ -189,9 +189,9 @@ Each phase ends with a manual check on a device or VM before the next phase star
 | `token` | | | | written by `login` |
 | `local.repository` | | | | required in local mode |
 | `local.branch` | | | | default `main` |
-| `local.deploy_key` | | | | private key text; written to `~/.ssh/` with mode 600 at apply |
+| `local.deploy_key` | | | | private key text from the server; written to `~/.ssh/` with mode 600 at apply |
 
-- Removed keys: `version`, `group_id`, `update.automatic`, `remote_admin.tailscale`, `remote_admin.nomachine`, `local.project_path`, `local.docker_path`, `local.ssh_key`, `local.health_url`.
+- Removed keys: `version`, `virtual_keyboard.always_show`, `group_id`, `update.automatic`, `remote_admin.tailscale`, `remote_admin.nomachine`, `local.project_path`, `local.docker_path`, `local.ssh_key`, `local.health_url`.
 - Check: the resolver prints the expected table for each profile and mode, and a key written in the JSON shows as "override".
 
 ### Phase 2: `init`, `apply`, `status`
@@ -205,12 +205,12 @@ Each phase ends with a manual check on a device or VM before the next phase star
 
 - Virtual keyboard: `on_touch` maps to Plasma's automatic mode, and `off` leaves no input method set.
 - Idle lock for workstation: KDE screen locker with `idle_lock_minutes`, instead of the current "never lock".
-- Idle return for terminal: the mechanism from the spike in question 7.
+- Idle return for terminal: `launch` appends `idle_return=1` to `url` (decision 7). The website side is built separately.
 - Check: each profile behaves as described in Notes on a touch-capable VM or device.
 
 ### Phase 4: Local mode rewrite
 
-- Clone to `~/digidisplay-webroot`, run the convention script (question 5), wait for `url`, then open Firefox.
+- Clone to `~/digidisplay-webroot`, run `dockerLinux/1startDocker.sh` from inside `dockerLinux/` (decision 5), poll `url`, then open Firefox.
 - `update` is renamed `update-app` and keeps its rules: clean fast-forward only, no volume deletion, kiosk closed on failure.
 - Delete the code for the old `local.*` keys from `scripts/lib/digidisplay-local-runtime`.
 - Check: a SetupCase Core project starts from a fresh clone, and `update` fast-forwards it.
@@ -218,13 +218,19 @@ Each phase ends with a manual check on a device or VM before the next phase star
 ### Phase 5: `login` and `pull` (blocked by the TLS certificate)
 
 - `login` asks for the email and a hidden password, calls the server, stores `token`, then runs `pull`.
-- `pull` takes no argument, sends the token, keeps the timestamped backup, carries the token across (question 3), and drops `--insecure`.
-- Server repo: the device tokens table, the login route, and token-scoped `/configure`.
+- `pull` takes no argument, sends the token, keeps the timestamped backup, writes the server response as-is (decision 3), and drops `--insecure`.
+- Server repo: the device tokens table, `POST /loginDigiDisplay`, and token-scoped `GET /configure` whose response includes `token` and `local.deploy_key`.
 - Check: login on a fresh box, change the config in the admin, pull, apply.
 
 ### Phase 6: Docs
 
 - Rewrite `README.md` to the structure in Notes.
-- Write `docs/overview.md`, `docs/profiles/*.md`, the five `docs/features/*.md` files (each with a `## Testing` section of manual checks), `docs/roadmap.md`, and `CLAUDE.md`.
+- Write `docs/overview.md`, `docs/profiles/*.md`, the five `docs/features/*.md` files (each with a `## Testing` section of manual checks), `docs/roadmap.md`, and `CLAUDE.md` (decision 12).
 - Fold `docs/install/aurora-dx.md` and `docs/recovery/kiosk.md` into the README and the feature docs, then delete them.
 - Check: read on phone; every command and key in the docs exists in the code, and nothing in the code is undocumented.
+
+### Phase 7: Final cleanup
+
+- Delete `old/` (decision 13).
+- Search the repo for removed command and key names, and remove any leftovers.
+- Check: `git grep` finds no `digidisplay-pull`, `group_id`, `docker_path`, `always_show` or other removed names outside `docs/decisions/`.
