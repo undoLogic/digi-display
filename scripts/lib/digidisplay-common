@@ -5,8 +5,11 @@ REPO_DIR="${DIGIDISPLAY_REPO_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." &&
 CONFIG_FILE="${DIGIDISPLAY_CONFIG:-$HOME/digidisplay.json}"
 BACKUP_DIR="$(dirname "$CONFIG_FILE")/digidisplay-backups"
 CONFIG_LIB="$REPO_DIR/scripts/lib/digidisplay-config"
-# DIGIDISPLAY_SERVER picks the cloud server for login and pull: production (default), staging, or a full URL.
-case "${DIGIDISPLAY_SERVER:-production}" in
+# Cloud server for login and pull. Staging while the cloud login is being built;
+# change to production before release. DIGIDISPLAY_SERVER overrides it per command
+# (production, staging, or a full URL).
+DEFAULT_SERVER="staging"
+case "${DIGIDISPLAY_SERVER:-$DEFAULT_SERVER}" in
   production) SERVER_URL="https://site2.digi-display.com" ;;
   staging) SERVER_URL="https://site2staging.digi-display.com" ;;
   *) SERVER_URL="${DIGIDISPLAY_SERVER%/}" ;;
