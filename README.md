@@ -42,8 +42,10 @@ just digidisplay-pull
 For a self-managed device that should not contact the Digi-Display server:
 
 ```bash
-cp config/digidisplay.json.example ~/digidisplay.json
+just digidisplay-init
 ```
+
+`just digidisplay-init` copies the complete current template from `config/digidisplay.json.example`. Keep that template updated whenever a new configuration variable is added; new initializations will then include it automatically.
 
 Review or edit the file before applying it:
 
@@ -92,12 +94,13 @@ Cloud example:
   "group_id": false,
   "hostname": "digidisplay-lobby",
   "mode": "cloud",
-  "url": "https://www.undologic.com/en/pages/screen",
+  "url": "https://www.digi-display.com/en/Pages/demoSlideshow",
   "kiosk": true,
   "wait_for_network": true,
   "restart_browser": true,
   "autologin": true,
   "reboot_after_apply": false,
+  "hide_menu": true,
   "virtual_keyboard": {
     "always_show": false
   },
@@ -114,6 +117,8 @@ Cloud example:
 ```
 
 `remote_admin.ssh`, `remote_admin.rdp`, and `autologin` currently have one-way behavior. `true` enables/configures the feature; `false` does not remove a feature that was enabled previously.
+
+`hide_menu` defaults to `true`. When enabled, Aurora's bottom Plasma menu auto-hides and appears when the mouse reaches the bottom edge of the screen. Set it to `false` to keep the menu visible, then run `just digidisplay-apply`.
 
 `group_id: false` means the device is unassigned or locally managed. A positive integer identifies the Digi-Display server group used to retrieve a managed configuration.
 
@@ -147,6 +152,7 @@ Local example:
   "restart_browser": true,
   "autologin": true,
   "reboot_after_apply": false,
+  "hide_menu": true,
   "virtual_keyboard": {
     "always_show": false
   },
@@ -186,6 +192,7 @@ The update requires a clean fast-forward, recreates containers without deleting 
 
 ```bash
 just digidisplay-pull [group_id]
+just digidisplay-init
 just digidisplay-apply
 just digidisplay-status
 just digidisplay-cancel
@@ -198,6 +205,7 @@ just digidisplay-activate-ssh
 ```
 
 - `digidisplay-pull` downloads a configuration and backs up the old local file.
+- `digidisplay-init` creates a new `~/digidisplay.json` from the current configuration template. It will not overwrite an existing file.
 - `digidisplay-apply` applies the local JSON and starts/restarts the kiosk.
 - `digidisplay-status` shows config, service state, and recent logs.
 - `digidisplay-cancel` stops the kiosk and closes Firefox.
@@ -248,6 +256,7 @@ scripts/digidisplay-pull
 scripts/digidisplay-activate-rdp
 scripts/digidisplay-activate-ssh
 scripts/digidisplay-cancel
+scripts/digidisplay-init
 scripts/digidisplay-launch
 scripts/digidisplay-run
 scripts/digidisplay-status

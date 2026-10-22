@@ -85,7 +85,7 @@ url = data.get("url")
 if not isinstance(url, str) or not url.startswith(("http://", "https://")):
     raise SystemExit("url must start with http:// or https://.")
 
-for key in ("kiosk", "wait_for_network", "restart_browser", "autologin", "reboot_after_apply"):
+for key in ("kiosk", "wait_for_network", "restart_browser", "autologin", "reboot_after_apply", "hide_menu"):
     if key in data and not isinstance(data[key], bool):
         raise SystemExit(f"{key} must be true or false.")
 
@@ -240,6 +240,71 @@ configure_kde_virtual_keyboard() {
   kwriteconfig6 --file kwinrc --group Wayland --key VirtualKeyboardMode "$visibility_mode"
 }
 
+configure_kde_menu_visibility() {
+  local hide_menu="$1"
+  local plasmashell_config="$HOME/.config/plasmashellrc"
+  local panel_visibility="0"
+  local kwriteconfig=""
+  local panel_group
+  local panel_subgroup
+  local panel_groups
+
+  if [ "$hide_menu" = "true" ]; then
+    panel_visibility="1"
+  fi
+
+  if command -v kwriteconfig6 >/dev/null 2>&1; then
+    kwriteconfig="kwriteconfig6"
+  elif command -v kwriteconfig5 >/dev/null 2>&1; then
+    kwriteconfig="kwriteconfig5"
+  else
+    warn "Plasma panel visibility was not changed because kwriteconfig was not found."
+    return
+  fi
+
+  if [ ! -f "$plasmashell_config" ]; then
+    warn "Plasma panel visibility was not changed because $plasmashell_config does not exist yet. Log in to Plasma once, then re-run apply."
+    return
+  fi
+
+  panel_groups="$(awk '
+    /^\[PlasmaViews\]\[Panel [0-9]+\]$/ {
+      split($0, parts, /[][]/)
+      print parts[3] "\t"
+    }
+    /^\[PlasmaViews\]\[Panel [0-9]+\]\[Horizontal[0-9]+\]$/ {
+      split($0, parts, /[][]/)
+      print parts[3] "\t" parts[4]
+    }
+  ' "$plasmashell_config")"
+
+  if [ -z "$panel_groups" ]; then
+    warn "No Plasma panels were found in $plasmashell_config."
+    return
+  fi
+
+  while IFS=$'\t' read -r panel_group panel_subgroup; do
+    [ -n "$panel_group" ] || continue
+    if [ -n "$panel_subgroup" ]; then
+      "$kwriteconfig" --file plasmashellrc --group PlasmaViews --group "$panel_group" --group "$panel_subgroup" --key panelVisibility "$panel_visibility"
+    else
+      "$kwriteconfig" --file plasmashellrc --group PlasmaViews --group "$panel_group" --key panelVisibility "$panel_visibility"
+    fi
+  done <<< "$panel_groups"
+
+  if systemctl --user is-active --quiet plasma-plasmashell.service 2>/dev/null; then
+    systemctl --user restart plasma-plasmashell.service || warn "Plasma panel visibility was saved, but the Plasma shell could not be restarted. Log out and back in or reboot to apply it."
+  else
+    warn "Plasma panel visibility was saved. Log out and back in or reboot if the panel does not change immediately."
+  fi
+
+  if [ "$hide_menu" = "true" ]; then
+    log "Aurora desktop menu set to auto-hide; move the pointer to the bottom edge to reveal it."
+  else
+    log "Aurora desktop menu set to remain visible."
+  fi
+}
+
 install_wallpaper() {
   if [ ! -f "$WALLPAPER_SOURCE" ]; then
     return
@@ -305,6 +370,7 @@ main() {
   local configured_hostname
   local restart_browser
   local virtual_keyboard_always_show
+  local hide_menu
   local ssh_enabled
   local rdp_enabled
   local autologin_enabled
@@ -320,6 +386,7 @@ main() {
   configured_hostname="$(json_value "hostname" "")"
   restart_browser="$(json_value "restart_browser" "true")"
   virtual_keyboard_always_show="$(json_value "virtual_keyboard.always_show" "false")"
+  hide_menu="$(json_value "hide_menu" "true")"
   ssh_enabled="$(json_value "remote_admin.ssh" "false")"
   rdp_enabled="$(json_value "remote_admin.rdp" "false")"
   autologin_enabled="$(json_value "autologin" "false")"
@@ -340,6 +407,7 @@ main() {
   configure_kde_locking
   configure_kde_power_management
   configure_kde_virtual_keyboard "$virtual_keyboard_always_show"
+  configure_kde_menu_visibility "$hide_menu"
   install_wallpaper
 
   if [ "$autologin_enabled" = "true" ]; then

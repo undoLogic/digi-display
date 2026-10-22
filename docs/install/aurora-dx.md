@@ -39,7 +39,7 @@ just digidisplay-pull 123
 For a device that should not contact the Digi-Display server, copy the example:
 
 ```bash
-cp config/digidisplay.json.example ~/digidisplay.json
+just digidisplay-init
 ```
 
 Review the JSON:
@@ -55,6 +55,8 @@ just digidisplay-apply
 ```
 
 Apply validates the file, configures the Aurora desktop and hostname, installs the Firefox profile and systemd user service, applies enabled SSH/RDP/autologin settings, and starts the kiosk. Set `reboot_after_apply` to `true` when apply should reboot after completing successfully.
+
+The example configuration hides Aurora's bottom Plasma menu by default. Move the mouse to the bottom edge of the screen to reveal it. Set `hide_menu` to `false` if the menu should remain visible, then run `just digidisplay-apply` again.
 
 Re-run `just digidisplay-apply` after changing setup values in the JSON.
 

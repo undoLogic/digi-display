@@ -3,12 +3,13 @@
   "group_id": false,
   "hostname": "digidisplay",
   "mode": "cloud",
-  "url": "https://www.undologic.com/en/pages/screen",
+  "url": "https://www.digi-display.com/en/Pages/demoSlideshow",
   "kiosk": true,
   "wait_for_network": true,
   "restart_browser": true,
   "autologin": true,
   "reboot_after_apply": false,
+  "hide_menu": true,
   "virtual_keyboard": {
     "always_show": false
   },
