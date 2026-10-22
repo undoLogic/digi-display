@@ -47,6 +47,7 @@ How `apply` and the kiosk service turn the Aurora desktop into a single-page app
 #### Scenarios
 
 - [ ] After `apply`, the kiosk opens without Firefox welcome, restore or password prompts.
+- [ ] When Firefox is closed and reopens automatically, it opens the launch URL with no "open previous tabs" prompt.
 - [ ] `"kiosk": false` opens a normal Firefox window.
 - [ ] `"restart_browser": false` leaves Firefox closed after it is closed.
 - [ ] `"hide_menu": false` keeps the bottom panel visible after apply.
