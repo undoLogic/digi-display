@@ -7,6 +7,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/digidisplay-common"
 log "DigiDisplay status"
 log "Config file: $(show_path "$CONFIG_FILE")"
 log "Backups: $(show_path "$BACKUP_DIR")/"
+log "Cloud server: $SERVER_URL"
 log
 
 if [ -f "$CONFIG_FILE" ]; then

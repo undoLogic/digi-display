@@ -71,7 +71,12 @@ An invalid config stops apply before step 1 changes anything. Apply never contac
 - The server inserts the token taken from the request, never one stored on the config or group.
 - Both routes start with `digiDisplay` because the same server also runs UpdateCase, so DigiDisplay does not take generic names such as `/login` or `/configure`. `/digiDisplayLogin` is separate from the existing website login.
 - The full server spec is `docs/features/MVP-digiDisplay-login-cloud.md` in the server repo.
-- The server can be changed for testing with `DIGIDISPLAY_SERVER` (default `https://site2.digi-display.com`).
+- `DIGIDISPLAY_SERVER` picks the server for `login` and `pull`: `production` (default, `https://site2.digi-display.com`), `staging` (`https://site2staging.digi-display.com`), or a full URL. `just status` shows the active one. Set it for every `login` and `pull`, because a token from one server is rejected by the other:
+
+  ```bash
+  export DIGIDISPLAY_SERVER=staging    # this terminal only
+  echo 'export DIGIDISPLAY_SERVER=staging' >> ~/.bashrc    # every terminal on this box
+  ```
 
 ## Testing
 
@@ -110,3 +115,4 @@ An invalid config stops apply before step 1 changes anything. Apply never contac
 - [ ] After a pull, DigiDisplay Actives shows the box's current hostname and pull time.
 - [ ] Logging in a second box creates a second token; revoking one leaves the other working.
 - [ ] The password and token do not appear in `ps` output during login or pull.
+- [ ] With `DIGIDISPLAY_SERVER=staging`, `just status` shows the staging server and `login`/`pull` talk to it.
