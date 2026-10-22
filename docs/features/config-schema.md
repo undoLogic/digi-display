@@ -45,7 +45,7 @@ Profile defaults are listed in each profile doc. Any other key is rejected, so a
 
 As an intentional MVP shortcut, `token` and `local.deploy_key` are stored in the JSON. To limit the risk:
 
-- `init`, `login`, `pull` and `apply` set the file and every `digidisplay-*.json` backup beside it to mode 600 (owner only).
+- `init`, `login`, `pull` and `apply` set the file and every backup in `~/digidisplay-backups/` to mode 600 (owner only), and the backup folder to 700.
 - `just status` shows secrets only as `(set)` or `(not set)`.
 - `pull` and `login` keep the token and password off the command line, so they do not appear in the process list.
 

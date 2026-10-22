@@ -44,7 +44,7 @@ Run every `just` command from inside `~/digi-display`. These are separate from A
 
 ## Configuration
 
-Everything lives in one file: `~/digidisplay.json`. A basic config needs three keys:
+Everything lives in one file in your home folder: `~/digidisplay.json`. On Aurora, home is `/var/home/<user>`, so with a user named `digidisplay` the full path is `/var/home/digidisplay/digidisplay.json`. A basic config needs three keys:
 
 ```json
 {
@@ -102,7 +102,7 @@ Each user then logs in at the login screen, and the kiosk opens the app.
 | --- | --- |
 | `just init [profile] [--advanced]` | Create a local config (default profile: `signage`) |
 | `just login` | Log in to DigiDisplay cloud, save the device token, then pull |
-| `just pull` | Re-download this device's config. Overwrites local edits; the old file is kept as `~/digidisplay-YYYY_MM_DD_HH_MM_SS.json` |
+| `just pull` | Re-download this device's config. Overwrites local edits; the old file is kept in `~/digidisplay-backups/` |
 | `just apply` | Make the device match the config, then (re)start the kiosk |
 | `just status` | Show final settings, where each came from, and recent logs |
 | `just update-app` | Local mode only: update the app from Git and restart it |
@@ -118,15 +118,17 @@ git pull
 just apply
 ```
 
-Your config and backups live in your home folder, outside the repository.
+Your config (`~/digidisplay.json`) and backups (`~/digidisplay-backups/`) live in your home folder, outside the repository.
 
 ## Recovery
 
 - **Wrong page or settings:** edit `~/digidisplay.json`, then `just apply`.
+- **Start over with a fresh config:** `mkdir -p ~/digidisplay-backups && mv ~/digidisplay.json ~/digidisplay-backups/`, then `just init`.
 - **Undo a pull:** copy a backup over the active file, then apply:
 
   ```bash
-  cp ~/digidisplay-2026_10_22_10_02_11.json ~/digidisplay.json
+  ls ~/digidisplay-backups/
+  cp ~/digidisplay-backups/digidisplay-2026_10_22_10_02_11.json ~/digidisplay.json
   just apply
   ```
 

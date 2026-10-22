@@ -10,6 +10,8 @@ Local device:   just init   ->  edit ~/digidisplay.json    ->  just apply
 Later changes:  edit in DigiDisplay admin  ->  just pull   ->  just apply
 ```
 
+Messages show paths with `~` for the home folder. On Aurora the home folder is `/var/home/<user>`; with a user named `digidisplay`, that is `/var/home/digidisplay`.
+
 The commands are separate on purpose: `pull` only downloads, and `apply` only reads the local file. There is no automatic polling, apply, or upload.
 
 ## `just init [profile] [--advanced]`
@@ -30,7 +32,7 @@ The commands are separate on purpose: `pull` only downloads, and `apply` only re
 1. Reads `token` from the config. Without one it stops and says to run `just login`.
 2. Downloads `GET /configure` with `Authorization: Bearer <token>`. TLS is verified; there is no `--insecure`.
 3. If the download fails or is not valid JSON, the active file is left unchanged.
-4. Renames the current file to `~/digidisplay-YYYY_MM_DD_HH_MM_SS.json`, then saves the download as `~/digidisplay.json`.
+4. Moves the current file to `~/digidisplay-backups/digidisplay-YYYY_MM_DD_HH_MM_SS.json`, then saves the download as `~/digidisplay.json`.
 
 Pull **overwrites all local edits**. The backup is the only copy of the local version. Backups are never deleted automatically; two pulls in the same second share a backup name.
 
@@ -40,7 +42,7 @@ The token is stored with the group's config on the server, so every pulled confi
 
 Validates and resolves the config (see `config-schema.md`), then in order:
 
-1. Sets the config and backups to mode 600.
+1. Sets the config and backups to mode 600 (the backup folder to 700).
 2. Local mode: checks git, docker, curl and Docker Compose, and installs the deploy key.
 3. Checks that Firefox is installed.
 4. Sets `hostname` if given.
@@ -77,7 +79,7 @@ An invalid config stops apply before step 1 changes anything. Apply never contac
 #### Scenarios
 
 - [ ] `just init` creates a 3-key file with mode 600.
-- [ ] `just init` when the file exists stops without changing it.
+- [ ] `just init` when the file exists stops without changing it and prints the edit and start-over commands.
 - [ ] `just init bogus` stops with the usage message.
 - [ ] `just apply` on a valid file finishes with "Configuration applied" and the kiosk opens.
 - [ ] `just apply` on invalid JSON stops before changing any setting.
@@ -95,7 +97,7 @@ An invalid config stops apply before step 1 changes anything. Apply never contac
 - [ ] `just login` with correct credentials saves the token, pulls, and prints "Run: just apply".
 - [ ] `just login` with wrong credentials prints "Login failed" and leaves the file unchanged.
 - [ ] `just pull` without a token says to run `just login`.
-- [ ] A second `just pull` creates a timestamped backup with mode 600.
+- [ ] A `just pull` creates a timestamped backup in `~/digidisplay-backups/` with mode 600, and nothing new appears in `~`.
 - [ ] A failed download leaves the active file unchanged.
 - [ ] After a pull, the new file still contains the token.
 - [ ] The password and token do not appear in `ps` output during login or pull.

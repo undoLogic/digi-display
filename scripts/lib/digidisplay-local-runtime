@@ -21,7 +21,7 @@ install_deploy_key() {
   mkdir -p "$HOME/.ssh"
   chmod 700 "$HOME/.ssh"
   (umask 077 && printf '%s\n' "$deploy_key" > "$DEPLOY_KEY_FILE")
-  log "Deploy key installed: $DEPLOY_KEY_FILE"
+  log "Deploy key installed: $(show_path "$DEPLOY_KEY_FILE")"
 }
 
 local_git() {
@@ -38,13 +38,13 @@ local_git() {
 
 ensure_local_repository() {
   if [ -d "$WEBROOT_DIR/.git" ]; then
-    log "Using existing local repository: $WEBROOT_DIR"
+    log "Using existing local repository: $(show_path "$WEBROOT_DIR")"
     return
   fi
 
-  [ ! -e "$WEBROOT_DIR" ] || fail "$WEBROOT_DIR exists but is not a Git repository. Move it away and try again."
+  [ ! -e "$WEBROOT_DIR" ] || fail "$(show_path "$WEBROOT_DIR") exists but is not a Git repository. Move it away and try again."
 
-  log "Cloning $DD_LOCAL_REPOSITORY ($DD_LOCAL_BRANCH) into $WEBROOT_DIR"
+  log "Cloning $DD_LOCAL_REPOSITORY ($DD_LOCAL_BRANCH) into $(show_path "$WEBROOT_DIR")"
   local_git clone --branch "$DD_LOCAL_BRANCH" --single-branch -- "$DD_LOCAL_REPOSITORY" "$WEBROOT_DIR"
 }
 

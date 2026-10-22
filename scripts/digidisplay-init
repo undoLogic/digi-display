@@ -21,12 +21,17 @@ main() {
     esac
   done
 
-  [ ! -e "$CONFIG_FILE" ] || fail "Configuration already exists: $CONFIG_FILE. Edit it, or move it away before running init again."
+  if [ -e "$CONFIG_FILE" ]; then
+    printf 'ERROR: A configuration already exists: %s\n' "$(show_path "$CONFIG_FILE")" >&2
+    printf '  Edit it:     nano %s\n' "$(show_path "$CONFIG_FILE")" >&2
+    printf '  Start over:  mkdir -p %s && mv %s %s/\n' "$(show_path "$BACKUP_DIR")" "$(show_path "$CONFIG_FILE")" "$(show_path "$BACKUP_DIR")" >&2
+    exit 1
+  fi
 
   mkdir -p "$(dirname "$CONFIG_FILE")"
   (umask 077 && python3 "$CONFIG_LIB" template "$profile" "${advanced[@]}" > "$CONFIG_FILE")
 
-  log "Created $CONFIG_FILE ($profile profile)."
+  log "Created $(show_path "$CONFIG_FILE") ($profile profile)."
   log "Review it, then run: just apply"
 }
 

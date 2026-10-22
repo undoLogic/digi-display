@@ -33,7 +33,7 @@ main() {
   [ -n "$token" ] || fail "The server did not return a token."
 
   python3 "$CONFIG_LIB" set-token <<< "$token"
-  log "Logged in. Token saved to $CONFIG_FILE."
+  log "Logged in. Token saved to $(show_path "$CONFIG_FILE")."
 
   bash "$REPO_DIR/scripts/digidisplay-pull"
 }

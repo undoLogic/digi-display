@@ -9,6 +9,7 @@
 - **Cloud login.** `pull <group_id>` was replaced by `login` (email and password, returns a device token) and a token-authenticated `pull`. `--insecure` was removed.
 - **Secrets in the config.** As an intentional MVP shortcut, the device token and the local deploy key live in `~/digidisplay.json`, protected with mode 600. This reverses the earlier "no secrets in the JSON" rule.
 - **Local mode.** Fixed paths replace the old `local.*` keys: the app is cloned to `~/digidisplay-webroot` and started with `dockerLinux/1startDocker.sh`; `url` is the readiness check.
+- **Backups folder.** `pull` keeps timestamped backups in `~/digidisplay-backups/` instead of beside the config in `~`, so the home folder stays clean. Messages print paths with `~`, because Aurora's `/var/home/<user>` looked like a subfolder when the user is named `digidisplay`.
 - **Idle behaviour.** Terminal passes `idle_return=<seconds>` to the website, which does the reset. Workstation locks the screen after `idle_lock_minutes`.
 - **Removed.** `version`, `group_id`, `update.automatic`, `remote_admin.tailscale`, `remote_admin.nomachine`, `virtual_keyboard.always_show`, `local.project_path`, `local.docker_path`, `local.ssh_key`, `local.health_url`, the automated runtime test, and the old install/recovery docs (folded into the README and feature docs).
 

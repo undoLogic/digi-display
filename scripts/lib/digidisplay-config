@@ -70,6 +70,12 @@ class ConfigError(Exception):
     pass
 
 
+def show_path(path):
+    home = str(Path.home())
+    path = str(path)
+    return "~/" + path[len(home) + 1:] if path.startswith(home + "/") else path
+
+
 def flatten(data, prefix=""):
     flat = {}
     for key, value in data.items():
@@ -96,9 +102,9 @@ def read_config():
     try:
         data = json.loads(CONFIG_FILE.read_text())
     except FileNotFoundError:
-        raise ConfigError(f"Configuration file was not found: {CONFIG_FILE}. Run 'just init' or 'just login'.")
+        raise ConfigError(f"Configuration file was not found: {show_path(CONFIG_FILE)}. Run 'just init' or 'just login'.")
     except (OSError, json.JSONDecodeError) as error:
-        raise ConfigError(f"Could not read valid JSON from {CONFIG_FILE}: {error}")
+        raise ConfigError(f"Could not read valid JSON from {show_path(CONFIG_FILE)}: {error}")
     if not isinstance(data, dict):
         raise ConfigError("The configuration must be a JSON object.")
     return data

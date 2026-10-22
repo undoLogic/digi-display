@@ -7,7 +7,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/digidisplay-common"
 DOWNLOAD_FILE="$CONFIG_FILE.download"
 
 backup_path() {
-  printf '%s/%s-%s.json\n' "$(dirname "$CONFIG_FILE")" "$(basename "$CONFIG_FILE" .json)" "$(date '+%Y_%m_%d_%H_%M_%S')"
+  printf '%s/%s-%s.json\n' "$BACKUP_DIR" "$(basename "$CONFIG_FILE" .json)" "$(date '+%Y_%m_%d_%H_%M_%S')"
 }
 
 cleanup() {
@@ -31,7 +31,7 @@ main() {
   command -v curl >/dev/null 2>&1 || fail "curl is required to download the configuration."
   [ -f "$CONFIG_FILE" ] || fail "No configuration found. Run 'just login' first."
   token="$(config_get token)"
-  [ -n "$token" ] || fail "No token in $CONFIG_FILE. Run 'just login' first."
+  [ -n "$token" ] || fail "No token in $(show_path "$CONFIG_FILE"). Run 'just login' first."
 
   trap cleanup EXIT
   log "Downloading configuration from $SERVER_URL/configure"
@@ -39,15 +39,16 @@ main() {
   python3 -c 'import json, sys; json.load(open(sys.argv[1]))' "$DOWNLOAD_FILE" 2>/dev/null \
     || fail "The server response was not valid JSON. The current configuration was not changed."
 
+  mkdir -p -m 700 "$BACKUP_DIR"
   saved_backup="$(backup_path)"
   mv -f -- "$CONFIG_FILE" "$saved_backup"
   mv -f -- "$DOWNLOAD_FILE" "$CONFIG_FILE" \
-    || fail "Could not install the downloaded configuration. The previous file is at $saved_backup"
+    || fail "Could not install the downloaded configuration. The previous file is at $(show_path "$saved_backup")"
   trap - EXIT
   protect_config_files
 
-  log "Backup: $saved_backup"
-  log "Configuration saved: $CONFIG_FILE"
+  log "Backup: $(show_path "$saved_backup")"
+  log "Configuration saved: $(show_path "$CONFIG_FILE")"
   log "Run: just apply"
 }
 

@@ -25,7 +25,7 @@ check_environment() {
     warn "Could not read /etc/os-release to verify Aurora DX."
   fi
 
-  command -v python3 >/dev/null 2>&1 || fail "python3 is required to read $CONFIG_FILE."
+  command -v python3 >/dev/null 2>&1 || fail "python3 is required to read $(show_path "$CONFIG_FILE")."
   command -v systemctl >/dev/null 2>&1 || fail "systemctl is required for the systemd user service."
 }
 
@@ -172,7 +172,7 @@ configure_kde_menu_visibility() {
   has_kwriteconfig || { warn "Plasma panel visibility was not changed because kwriteconfig was not found."; return; }
 
   if [ ! -f "$plasmashell_config" ]; then
-    warn "Plasma panel visibility was not changed because $plasmashell_config does not exist yet. Log in to Plasma once, then re-run apply."
+    warn "Plasma panel visibility was not changed because $(show_path "$plasmashell_config") does not exist yet. Log in to Plasma once, then re-run apply."
     return
   fi
 
@@ -188,7 +188,7 @@ configure_kde_menu_visibility() {
   ' "$plasmashell_config")"
 
   if [ -z "$panel_groups" ]; then
-    warn "No Plasma panels were found in $plasmashell_config."
+    warn "No Plasma panels were found in $(show_path "$plasmashell_config")."
     return
   fi
 
@@ -249,7 +249,7 @@ configure_autologin() {
 
 main() {
   log "DigiDisplay apply"
-  log "Configuration: $CONFIG_FILE"
+  log "Configuration: $(show_path "$CONFIG_FILE")"
 
   check_environment
   load_settings

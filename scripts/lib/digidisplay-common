@@ -3,6 +3,7 @@
 
 REPO_DIR="${DIGIDISPLAY_REPO_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)}"
 CONFIG_FILE="${DIGIDISPLAY_CONFIG:-$HOME/digidisplay.json}"
+BACKUP_DIR="$(dirname "$CONFIG_FILE")/digidisplay-backups"
 CONFIG_LIB="$REPO_DIR/scripts/lib/digidisplay-config"
 SERVER_URL="${DIGIDISPLAY_SERVER:-https://site2.digi-display.com}"
 SERVICE_NAME="digidisplay.service"
@@ -21,6 +22,15 @@ fail() {
   exit 1
 }
 
+# Prints a path with the home folder as ~ (Aurora homes are /var/home/<user>, which reads like a subfolder).
+show_path() {
+  local path="$1"
+  if [[ "$path" == "$HOME"/* ]]; then
+    path="~/${path#"$HOME"/}"
+  fi
+  printf '%s' "$path"
+}
+
 # Sets the DD_* variables from the resolved configuration, or exits on an invalid file.
 load_settings() {
   local settings
@@ -32,12 +42,10 @@ config_get() {
   python3 "$CONFIG_LIB" get "$1"
 }
 
-# Restricts the active config and every timestamped backup beside it to the owner.
+# Restricts the active config, the backup folder, and every backup in it to the owner.
 protect_config_files() {
-  local config_dir config_base
-  config_dir="$(dirname "$CONFIG_FILE")"
-  config_base="$(basename "$CONFIG_FILE" .json)"
-
   chmod 600 "$CONFIG_FILE"
-  find "$config_dir" -maxdepth 1 -type f -name "$config_base-*.json" -exec chmod 600 {} +
+  [ -d "$BACKUP_DIR" ] || return 0
+  chmod 700 "$BACKUP_DIR"
+  find "$BACKUP_DIR" -maxdepth 1 -type f -name '*.json' -exec chmod 600 {} +
 }

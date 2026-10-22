@@ -5,7 +5,8 @@ set -Eeuo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib/digidisplay-common"
 
 log "DigiDisplay status"
-log "Config file: $CONFIG_FILE"
+log "Config file: $(show_path "$CONFIG_FILE")"
+log "Backups: $(show_path "$BACKUP_DIR")/"
 log
 
 if [ -f "$CONFIG_FILE" ]; then
