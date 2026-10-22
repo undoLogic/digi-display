@@ -5,7 +5,7 @@ Everything planned but not built. Feature docs describe only what exists; ideas 
 ## Before cloud login goes live
 
 - **Fix the TLS certificate for `site2.digi-display.com`.** `login` and `pull` verify TLS, so they fail until the certificate matches the hostname.
-- **Server side:** device tokens table, `POST /loginDigiDisplay`, token-scoped `GET /configure` (see `features/login-pull-apply.md`).
+- **Server side:** device tokens table, `POST /digiDisplayLogin`, token-scoped `GET /digiDisplayConfigure` (see `features/login-pull-apply.md`).
 - **Website side:** read `idle_return=<seconds>` and reset to the home page after that much idle time.
 
 ## Profiles

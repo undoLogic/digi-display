@@ -23,14 +23,14 @@ The commands are separate on purpose: `pull` only downloads, and `apply` only re
 ## `just login`
 
 1. Asks for email and password (the password is not shown).
-2. Sends them to `POST /loginDigiDisplay` as JSON on stdin, so the password never appears on the command line.
+2. Sends them to `POST /digiDisplayLogin` as JSON on stdin, so the password never appears on the command line.
 3. Stores the returned `token` in `~/digidisplay.json`, creating the file if needed.
 4. Runs `pull`.
 
 ## `just pull`
 
 1. Reads `token` from the config. Without one it stops and says to run `just login`.
-2. Downloads `GET /configure` with `Authorization: Bearer <token>`. TLS is verified; there is no `--insecure`.
+2. Downloads `GET /digiDisplayConfigure` with `Authorization: Bearer <token>`. TLS is verified; there is no `--insecure`.
 3. If the download fails or is not valid JSON, the active file is left unchanged.
 4. Moves the current file to `~/digidisplay-backups/digidisplay-YYYY_MM_DD_HH_MM_SS.json`, then saves the download as `~/digidisplay.json`.
 
@@ -60,11 +60,12 @@ An invalid config stops apply before step 1 changes anything. Apply never contac
 
 | Route | Request | Response |
 | --- | --- | --- |
-| `POST /loginDigiDisplay` | JSON `{"email", "password"}` | `{"token": "..."}`; HTTP error on bad credentials |
-| `GET /configure` | `Authorization: Bearer <token>` | The group's complete config JSON, including `token` and, for local mode, `local.deploy_key` |
+| `POST /digiDisplayLogin` | JSON `{"email", "password"}` | `{"token": "..."}`; HTTP error on bad credentials |
+| `GET /digiDisplayConfigure` | `Authorization: Bearer <token>` | The group's complete config JSON, including `token` and, for local mode, `local.deploy_key` |
 
 - A device tokens table links each token to one customer group. A token can only fetch its own group; deleting the token cuts off that box.
-- `/loginDigiDisplay` is separate from the existing website login.
+- Both routes start with `digiDisplay` because the same server also runs UpdateCase, so DigiDisplay does not take generic names such as `/login` or `/configure`. `/digiDisplayLogin` is separate from the existing website login.
+- The full server spec is `docs/features/MVP-digiDisplay-login-cloud.md` in the server repo.
 - The server can be changed for testing with `DIGIDISPLAY_SERVER` (default `https://site2.digi-display.com`).
 
 ## Testing
@@ -90,7 +91,7 @@ An invalid config stops apply before step 1 changes anything. Apply never contac
 
 **Surfaces:**
 - `scripts/digidisplay-login`, `scripts/digidisplay-pull`
-- Server: `POST /loginDigiDisplay`, `GET /configure`
+- Server: `POST /digiDisplayLogin`, `GET /digiDisplayConfigure`
 
 #### Scenarios
 

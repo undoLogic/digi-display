@@ -20,7 +20,7 @@ download_config() {
 
   curl --fail --silent --show-error --location \
     --header @<(printf 'Authorization: Bearer %s\nAccept: application/json\n' "$token") \
-    --output "$DOWNLOAD_FILE" "$SERVER_URL/configure"
+    --output "$DOWNLOAD_FILE" "$SERVER_URL/digiDisplayConfigure"
 }
 
 main() {
@@ -34,7 +34,7 @@ main() {
   [ -n "$token" ] || fail "No token in $(show_path "$CONFIG_FILE"). Run 'just login' first."
 
   trap cleanup EXIT
-  log "Downloading configuration from $SERVER_URL/configure"
+  log "Downloading configuration from $SERVER_URL/digiDisplayConfigure"
   (umask 077 && download_config "$token")
   python3 -c 'import json, sys; json.load(open(sys.argv[1]))' "$DOWNLOAD_FILE" 2>/dev/null \
     || fail "The server response was not valid JSON. The current configuration was not changed."

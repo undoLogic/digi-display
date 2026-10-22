@@ -13,7 +13,7 @@ request_token() {
     | curl --fail --silent --show-error \
         --header "Content-Type: application/json" \
         --header "Accept: application/json" \
-        --data @- "$SERVER_URL/loginDigiDisplay" \
+        --data @- "$SERVER_URL/digiDisplayLogin" \
     | python3 -c 'import json, sys; print(json.load(sys.stdin).get("token") or "")'
 }
 
